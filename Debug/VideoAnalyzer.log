@@ -1,9 +1,34 @@
-﻿Build started 2018/7/13 15:51:29.
-     1>Project "D:\Projects\CDC\VideoAnalyzer\VideoAnalyzer.vcxproj" on node 2 (clean target(s)).
-     1>_PrepareForClean:
-         Deleting file "Debug\VideoAnalyzer.lastbuildstate".
-     1>Done Building Project "D:\Projects\CDC\VideoAnalyzer\VideoAnalyzer.vcxproj" (clean target(s)).
+﻿Build started 2018/7/16 19:39:25.
+     1>Project "D:\Projects\VideoAnalyzer\VideoAnalyzer.vcxproj" on node 2 (build target(s)).
+     1>InitializeBuildStatus:
+         Creating "Debug\VideoAnalyzer.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       ClCompile:
+         All outputs are up-to-date.
+         D:\Program Files\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /AI"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /Zi /clr:pure /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _UNICODE /D UNICODE /EHa /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"StdAfx.h" /Fp"Debug\VideoAnalyzer.pch" /Fo"Debug\\" /Fd"Debug\vc100.pdb" /TP /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.Core.dll" /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.Data.dll" /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.dll" /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.Drawing.dll" /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.Windows.Forms.dll" /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.Xml.dll" /analyze- /errorReport:prompt VideoAnalyzer.cpp /clr:nostdlib 
+         VideoAnalyzer.cpp
+     1>d:\projects\videoanalyzer\Form1.h(354): warning C4244: 'initializing' : conversion from 'float' to 'int', possible loss of data
+     1>d:\projects\videoanalyzer\Form1.h(359): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+         All outputs are up-to-date.
+       CoreResGen:
+         No resources are out of date with respect to their source files. Skipping resource generation.
+       ResourceCompile:
+         All outputs are up-to-date.
+       Link:
+         D:\Program Files\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"D:\Projects\VideoAnalyzer\Debug\VideoAnalyzer.exe" /INCREMENTAL /NOLOGO /ASSEMBLYRESOURCE:Debug\VideoAnalyzer.Form1.resources /MANIFEST /ManifestFile:"Debug\VideoAnalyzer.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"D:\Projects\VideoAnalyzer\Debug\VideoAnalyzer.pdb" /ASSEMBLYDEBUG /SUBSYSTEM:WINDOWS /TLBID:1 /ENTRY:"main" /DYNAMICBASE /FIXED:NO /NXCOMPAT /MACHINE:X86 Debug\app.res
+         Debug\AssemblyInfo.obj
+         Debug\stdafx.obj
+         Debug\VideoAnalyzer.obj
+         "Debug\.NETFramework,Version=v4.0.AssemblyAttributes.obj"
+         VideoAnalyzer.vcxproj -> D:\Projects\VideoAnalyzer\Debug\VideoAnalyzer.exe
+       Manifest:
+         C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:"D:\Projects\VideoAnalyzer\Debug\VideoAnalyzer.exe;#1" /manifest Debug\VideoAnalyzer.exe.intermediate.manifest
+       FinalizeBuildStatus:
+         Deleting file "Debug\VideoAnalyzer.unsuccessfulbuild".
+         Touching "Debug\VideoAnalyzer.lastbuildstate".
+     1>Done Building Project "D:\Projects\VideoAnalyzer\VideoAnalyzer.vcxproj" (build target(s)).
 
 Build succeeded.
 
-Time Elapsed 00:00:00.11
+Time Elapsed 00:00:02.26
