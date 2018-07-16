@@ -10,7 +10,7 @@ namespace VideoAnalyzer {
 	using namespace System::Windows::Forms;
 	using namespace System::Data;
 	using namespace System::Drawing;
-
+    using namespace System::Drawing::Drawing2D;
 	/// <summary>
 	/// Summary for Form1
 	/// </summary>
@@ -314,21 +314,46 @@ namespace VideoAnalyzer {
              }
 private: System::Void panel2_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
              Graphics^ g = VideoPlaybackPannel->CreateGraphics();
-             Pen^ p = gcnew Pen(Color::Black);
-             g->DrawLine(p, 0, 0, 50, 50);
+             g->Clear(Color::White);
+             drawGrid(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, 20, 20, 5);
              delete g;
          }
 private: System::Void VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
              Graphics^ g = VideoBitratePannel->CreateGraphics();
-             Pen^ p = gcnew Pen(Color::Red);
-             g->DrawLine(p, 0, 0, 50, 50);
+             g->Clear(Color::White);
+             drawGrid(g, VideoBitratePannel->Width, VideoBitratePannel->Height, 20, 20, 5);
              delete g;
          }
 private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
              Graphics^ g = VBVBufferPannel->CreateGraphics();
-             Pen^ p = gcnew Pen(Color::Green);
-             g->DrawLine(p, 0, 0, 50, 50);
+             g->Clear(Color::White);
+             drawGrid(g, VBVBufferPannel->Width, VBVBufferPannel->Height, 20, 20, 5);
              delete g;
+         }
+private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady)
+         {
+             Pen^ pen = gcnew Pen(Color::Gray, 1.0);
+             Point^ tl = gcnew Point(); // top left position of drawing area
+             tl->X = ipadx;
+             tl->Y = ipady;
+             Point^ br = gcnew Point(); // bottom right position of drawing area
+             br->X = ipadx + (Width - ipadx) / GridSize * GridSize;
+             br->Y = ipady + (Height - ipady) / GridSize * GridSize;
+
+             pen->DashStyle = DashStyle::DashDot;
+             // vertical grid line
+             for(Int32 i = tl->X; i <= br->X; i += GridSize)
+                 g->DrawLine(pen, i, tl->Y, i, br->Y);
+             // horizontal grid line
+             for(Int32 i = tl->Y; i <= br->Y; i += GridSize)
+                 g->DrawLine(pen, tl->X, i, br->X, i);
+
+             pen->Width = 2.0;
+             pen->DashStyle = DashStyle::Solid;
+             g->DrawLine(pen, tl->X, tl->Y, br->X, tl->Y);
+             g->DrawLine(pen, tl->X, tl->Y, tl->X, br->Y);
+             g->DrawLine(pen, tl->X, br->Y, br->X, br->Y);
+             g->DrawLine(pen, br->X, tl->Y, br->X, br->Y);
          }
 };
 }
