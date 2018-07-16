@@ -17,6 +17,7 @@ namespace VideoAnalyzer {
 	public ref class Form1 : public System::Windows::Forms::Form
 	{
 	public:
+        System::String^ mfilename;
 		Form1(void)
 		{
 			InitializeComponent();
@@ -51,13 +52,17 @@ namespace VideoAnalyzer {
     private: System::Windows::Forms::ToolStripMenuItem^  versionToolStripMenuItem;
 
     private: System::Windows::Forms::OpenFileDialog^  openFileDialog1;
-    private: System::Windows::Forms::Panel^  panel1;
+    private: System::Windows::Forms::Panel^  VideoInfoPannel;
+
     private: System::Windows::Forms::Label^  label1;
     private: System::Windows::Forms::Label^  label3;
     private: System::Windows::Forms::Label^  label2;
-    private: System::Windows::Forms::Panel^  panel2;
-    private: System::Windows::Forms::Panel^  panel3;
-    private: System::Windows::Forms::Panel^  panel4;
+    private: System::Windows::Forms::Panel^  VideoPlaybackPannel;
+    private: System::Windows::Forms::Panel^  VideoBitratePannel;
+    private: System::Windows::Forms::Panel^  VBVBufferPannel;
+
+
+
 
     protected: 
 
@@ -93,15 +98,15 @@ namespace VideoAnalyzer {
             this->aboutToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
             this->versionToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
             this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
-            this->panel1 = (gcnew System::Windows::Forms::Panel());
-            this->label1 = (gcnew System::Windows::Forms::Label());
-            this->label2 = (gcnew System::Windows::Forms::Label());
+            this->VideoInfoPannel = (gcnew System::Windows::Forms::Panel());
             this->label3 = (gcnew System::Windows::Forms::Label());
-            this->panel2 = (gcnew System::Windows::Forms::Panel());
-            this->panel3 = (gcnew System::Windows::Forms::Panel());
-            this->panel4 = (gcnew System::Windows::Forms::Panel());
+            this->label2 = (gcnew System::Windows::Forms::Label());
+            this->label1 = (gcnew System::Windows::Forms::Label());
+            this->VideoPlaybackPannel = (gcnew System::Windows::Forms::Panel());
+            this->VideoBitratePannel = (gcnew System::Windows::Forms::Panel());
+            this->VBVBufferPannel = (gcnew System::Windows::Forms::Panel());
             this->menuStrip1->SuspendLayout();
-            this->panel1->SuspendLayout();
+            this->VideoInfoPannel->SuspendLayout();
             this->SuspendLayout();
             // 
             // menuStrip1
@@ -110,7 +115,7 @@ namespace VideoAnalyzer {
                 this->settingToolStripMenuItem, this->windowsToolStripMenuItem, this->aboutToolStripMenuItem});
             this->menuStrip1->Location = System::Drawing::Point(0, 0);
             this->menuStrip1->Name = L"menuStrip1";
-            this->menuStrip1->Size = System::Drawing::Size(816, 25);
+            this->menuStrip1->Size = System::Drawing::Size(985, 25);
             this->menuStrip1->TabIndex = 0;
             this->menuStrip1->Text = L"menuStrip1";
             // 
@@ -125,20 +130,20 @@ namespace VideoAnalyzer {
             // openToolStripMenuItem
             // 
             this->openToolStripMenuItem->Name = L"openToolStripMenuItem";
-            this->openToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+            this->openToolStripMenuItem->Size = System::Drawing::Size(108, 22);
             this->openToolStripMenuItem->Text = L"Open";
             this->openToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::openToolStripMenuItem_Click);
             // 
             // closeToolStripMenuItem
             // 
             this->closeToolStripMenuItem->Name = L"closeToolStripMenuItem";
-            this->closeToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+            this->closeToolStripMenuItem->Size = System::Drawing::Size(108, 22);
             this->closeToolStripMenuItem->Text = L"Close";
             // 
             // exitToolStripMenuItem
             // 
             this->exitToolStripMenuItem->Name = L"exitToolStripMenuItem";
-            this->exitToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+            this->exitToolStripMenuItem->Size = System::Drawing::Size(108, 22);
             this->exitToolStripMenuItem->Text = L"Exit";
             // 
             // settingToolStripMenuItem
@@ -194,38 +199,21 @@ namespace VideoAnalyzer {
             this->openFileDialog1->FileName = L"openFileDialog1";
             this->openFileDialog1->InitialDirectory = L"D:\\";
             // 
-            // panel1
+            // VideoInfoPannel
             // 
-            this->panel1->AutoScroll = true;
-            this->panel1->AutoSize = true;
-            this->panel1->BackColor = System::Drawing::SystemColors::Control;
-            this->panel1->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
-            this->panel1->Controls->Add(this->label3);
-            this->panel1->Controls->Add(this->label2);
-            this->panel1->Controls->Add(this->label1);
-            this->panel1->Location = System::Drawing::Point(11, 23);
-            this->panel1->Name = L"panel1";
-            this->panel1->Size = System::Drawing::Size(138, 418);
-            this->panel1->TabIndex = 1;
-            // 
-            // label1
-            // 
-            this->label1->AutoSize = true;
-            this->label1->Location = System::Drawing::Point(10, 16);
-            this->label1->Name = L"label1";
-            this->label1->Size = System::Drawing::Size(65, 12);
-            this->label1->TabIndex = 0;
-            this->label1->Text = L"Resolution";
-            this->label1->Click += gcnew System::EventHandler(this, &Form1::label1_Click);
-            // 
-            // label2
-            // 
-            this->label2->AutoSize = true;
-            this->label2->Location = System::Drawing::Point(10, 66);
-            this->label2->Name = L"label2";
-            this->label2->Size = System::Drawing::Size(35, 12);
-            this->label2->TabIndex = 1;
-            this->label2->Text = L"Codec";
+            this->VideoInfoPannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
+                | System::Windows::Forms::AnchorStyles::Left));
+            this->VideoInfoPannel->AutoScroll = true;
+            this->VideoInfoPannel->AutoSize = true;
+            this->VideoInfoPannel->BackColor = System::Drawing::SystemColors::Control;
+            this->VideoInfoPannel->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
+            this->VideoInfoPannel->Controls->Add(this->label3);
+            this->VideoInfoPannel->Controls->Add(this->label2);
+            this->VideoInfoPannel->Controls->Add(this->label1);
+            this->VideoInfoPannel->Location = System::Drawing::Point(11, 23);
+            this->VideoInfoPannel->Name = L"VideoInfoPannel";
+            this->VideoInfoPannel->Size = System::Drawing::Size(138, 529);
+            this->VideoInfoPannel->TabIndex = 1;
             // 
             // label3
             // 
@@ -236,48 +224,73 @@ namespace VideoAnalyzer {
             this->label3->TabIndex = 2;
             this->label3->Text = L"BitRate";
             // 
-            // panel2
+            // label2
             // 
-            this->panel2->Anchor = System::Windows::Forms::AnchorStyles::Top;
-            this->panel2->AutoScroll = true;
-            this->panel2->AutoSize = true;
-            this->panel2->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
-            this->panel2->Location = System::Drawing::Point(150, 23);
-            this->panel2->Name = L"panel2";
-            this->panel2->Size = System::Drawing::Size(665, 250);
-            this->panel2->TabIndex = 2;
-            this->panel2->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &Form1::panel2_Paint);
+            this->label2->AutoSize = true;
+            this->label2->Location = System::Drawing::Point(10, 66);
+            this->label2->Name = L"label2";
+            this->label2->Size = System::Drawing::Size(35, 12);
+            this->label2->TabIndex = 1;
+            this->label2->Text = L"Codec";
             // 
-            // panel3
+            // label1
             // 
-            this->panel3->AutoScroll = true;
-            this->panel3->AutoSize = true;
-            this->panel3->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
-            this->panel3->Location = System::Drawing::Point(150, 279);
-            this->panel3->Name = L"panel3";
-            this->panel3->Size = System::Drawing::Size(327, 162);
-            this->panel3->TabIndex = 3;
+            this->label1->AutoSize = true;
+            this->label1->Location = System::Drawing::Point(10, 16);
+            this->label1->Name = L"label1";
+            this->label1->Size = System::Drawing::Size(65, 12);
+            this->label1->TabIndex = 0;
+            this->label1->Text = L"Resolution";
             // 
-            // panel4
+            // VideoPlaybackPannel
             // 
-            this->panel4->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Right));
-            this->panel4->AutoScroll = true;
-            this->panel4->AutoSize = true;
-            this->panel4->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
-            this->panel4->Location = System::Drawing::Point(483, 279);
-            this->panel4->Name = L"panel4";
-            this->panel4->Size = System::Drawing::Size(331, 162);
-            this->panel4->TabIndex = 4;
+            this->VideoPlaybackPannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
+                | System::Windows::Forms::AnchorStyles::Left) 
+                | System::Windows::Forms::AnchorStyles::Right));
+            this->VideoPlaybackPannel->AutoScroll = true;
+            this->VideoPlaybackPannel->AutoSize = true;
+            this->VideoPlaybackPannel->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
+            this->VideoPlaybackPannel->Location = System::Drawing::Point(150, 23);
+            this->VideoPlaybackPannel->Name = L"VideoPlaybackPannel";
+            this->VideoPlaybackPannel->Size = System::Drawing::Size(834, 361);
+            this->VideoPlaybackPannel->TabIndex = 2;
+            this->VideoPlaybackPannel->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &Form1::panel2_Paint);
+            // 
+            // VideoBitratePannel
+            // 
+            this->VideoBitratePannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left) 
+                | System::Windows::Forms::AnchorStyles::Right));
+            this->VideoBitratePannel->AutoScroll = true;
+            this->VideoBitratePannel->AutoSize = true;
+            this->VideoBitratePannel->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
+            this->VideoBitratePannel->Location = System::Drawing::Point(150, 390);
+            this->VideoBitratePannel->Name = L"VideoBitratePannel";
+            this->VideoBitratePannel->Size = System::Drawing::Size(405, 162);
+            this->VideoBitratePannel->TabIndex = 3;
+            this->VideoBitratePannel->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &Form1::VideoBitratePannel_Paint);
+            // 
+            // VBVBufferPannel
+            // 
+            this->VBVBufferPannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left) 
+                | System::Windows::Forms::AnchorStyles::Right));
+            this->VBVBufferPannel->AutoScroll = true;
+            this->VBVBufferPannel->AutoSize = true;
+            this->VBVBufferPannel->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
+            this->VBVBufferPannel->Location = System::Drawing::Point(561, 390);
+            this->VBVBufferPannel->Name = L"VBVBufferPannel";
+            this->VBVBufferPannel->Size = System::Drawing::Size(422, 162);
+            this->VBVBufferPannel->TabIndex = 4;
+            this->VBVBufferPannel->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &Form1::VBVBufferPannel_Paint);
             // 
             // Form1
             // 
             this->AutoScaleDimensions = System::Drawing::SizeF(6, 12);
             this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-            this->ClientSize = System::Drawing::Size(816, 442);
-            this->Controls->Add(this->panel4);
-            this->Controls->Add(this->panel3);
-            this->Controls->Add(this->panel2);
-            this->Controls->Add(this->panel1);
+            this->ClientSize = System::Drawing::Size(985, 553);
+            this->Controls->Add(this->VBVBufferPannel);
+            this->Controls->Add(this->VideoBitratePannel);
+            this->Controls->Add(this->VideoPlaybackPannel);
+            this->Controls->Add(this->VideoInfoPannel);
             this->Controls->Add(this->menuStrip1);
             this->Font = (gcnew System::Drawing::Font(L"SimSun", 9, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
                 static_cast<System::Byte>(134)));
@@ -287,8 +300,8 @@ namespace VideoAnalyzer {
             this->Text = L"VideoAnalyzer";
             this->menuStrip1->ResumeLayout(false);
             this->menuStrip1->PerformLayout();
-            this->panel1->ResumeLayout(false);
-            this->panel1->PerformLayout();
+            this->VideoInfoPannel->ResumeLayout(false);
+            this->VideoInfoPannel->PerformLayout();
             this->ResumeLayout(false);
             this->PerformLayout();
 
@@ -296,9 +309,26 @@ namespace VideoAnalyzer {
 #pragma endregion
     private: System::Void openToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
                  openFileDialog1->ShowDialog();
-                 openFileDialog1->FileName;
+                 mfilename = openFileDialog1->FileName;
+                 this->Text = L"VideoAnalyzer " + mfilename;
              }
 private: System::Void panel2_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
+             Graphics^ g = VideoPlaybackPannel->CreateGraphics();
+             Pen^ p = gcnew Pen(Color::Black);
+             g->DrawLine(p, 0, 0, 50, 50);
+             delete g;
+         }
+private: System::Void VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
+             Graphics^ g = VideoBitratePannel->CreateGraphics();
+             Pen^ p = gcnew Pen(Color::Red);
+             g->DrawLine(p, 0, 0, 50, 50);
+             delete g;
+         }
+private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
+             Graphics^ g = VBVBufferPannel->CreateGraphics();
+             Pen^ p = gcnew Pen(Color::Green);
+             g->DrawLine(p, 0, 0, 50, 50);
+             delete g;
          }
 };
 }
