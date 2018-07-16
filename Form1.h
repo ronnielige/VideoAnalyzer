@@ -1,6 +1,7 @@
 #pragma once
 
 #include<stdio.h>
+#include<windows.h>
 
 namespace VideoAnalyzer {
 
@@ -254,7 +255,7 @@ namespace VideoAnalyzer {
             this->VideoPlaybackPannel->Name = L"VideoPlaybackPannel";
             this->VideoPlaybackPannel->Size = System::Drawing::Size(834, 361);
             this->VideoPlaybackPannel->TabIndex = 2;
-            this->VideoPlaybackPannel->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &Form1::panel2_Paint);
+            this->VideoPlaybackPannel->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &Form1::VideoPlaybackPannel_Paint);
             // 
             // VideoBitratePannel
             // 
@@ -312,10 +313,24 @@ namespace VideoAnalyzer {
                  mfilename = openFileDialog1->FileName;
                  this->Text = L"VideoAnalyzer " + mfilename;
              }
-private: System::Void panel2_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
+private: System::Void VideoPlaybackPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
              Graphics^ g = VideoPlaybackPannel->CreateGraphics();
              g->Clear(Color::White);
-             drawGrid(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, 20, 20, 5);
+             Bitmap^ pic = gcnew Bitmap(L"baseketball_1.bmp");
+             showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, pic);
+             Sleep(1000);
+              
+             pic = gcnew Bitmap(L"baseketball_2.bmp");
+             showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, pic);
+             Sleep(1000);
+             
+             pic = gcnew Bitmap(L"baseketball_3.bmp");
+             showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, pic);
+             Sleep(1000);
+
+             pic = gcnew Bitmap(L"baseketball_4.bmp");
+             showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, pic);
+             Sleep(100);
              delete g;
          }
 private: System::Void VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
@@ -330,6 +345,26 @@ private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Win
              drawGrid(g, VBVBufferPannel->Width, VBVBufferPannel->Height, 20, 20, 5);
              delete g;
          }
+
+private: System::Void showFrame(Graphics^ g, Int32 pannelWidth, Int32 pannelHeight, Bitmap^ pic)
+         {
+             float ScaleY = (float)pannelHeight / pic->Height; 
+             float ScaleX = (float)pannelWidth  / pic->Width; 
+             Int32 ScaledHeight = pannelHeight;
+             Int32 ScaledWidth = pic->Width * ScaleY;
+             Int32 tl_x, tl_y, br_x, br_y;
+             if(ScaledWidth > pannelWidth)
+             {
+                 ScaledWidth  = pannelWidth;
+                 ScaledHeight = pic->Height * ScaleX;
+             }
+             tl_x = (pannelWidth - ScaledWidth) / 2;
+             br_x = (pannelWidth + ScaledWidth) / 2;
+             tl_y = (pannelHeight - ScaledHeight) / 2;
+             br_y = (pannelHeight + ScaledHeight) / 2;
+             g->DrawImage(pic, tl_x, tl_y, ScaledWidth, ScaledHeight);
+
+         }
 private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady)
          {
              Pen^ pen = gcnew Pen(Color::Gray, 1.0);
@@ -339,6 +374,12 @@ private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 Gri
              Point^ br = gcnew Point(); // bottom right position of drawing area
              br->X = ipadx + (Width - ipadx) / GridSize * GridSize;
              br->Y = ipady + (Height - ipady) / GridSize * GridSize;
+             Point^ bl = gcnew Point(); // bottom left position of drawing area
+             bl->X = tl->X;
+             bl->Y = br->Y;
+             Point^ tr = gcnew Point(); // bottom left position of drawing area
+             tr->X = br->X;
+             tr->Y = tl->Y;
 
              pen->DashStyle = DashStyle::DashDot;
              // vertical grid line
@@ -350,10 +391,10 @@ private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 Gri
 
              pen->Width = 2.0;
              pen->DashStyle = DashStyle::Solid;
-             g->DrawLine(pen, tl->X, tl->Y, br->X, tl->Y);
-             g->DrawLine(pen, tl->X, tl->Y, tl->X, br->Y);
-             g->DrawLine(pen, tl->X, br->Y, br->X, br->Y);
-             g->DrawLine(pen, br->X, tl->Y, br->X, br->Y);
+             g->DrawLine(pen, tl->X, tl->Y, tr->X, tr->Y);
+             g->DrawLine(pen, tl->X, tl->Y, bl->X, bl->Y);
+             g->DrawLine(pen, bl->X, bl->Y, br->X, br->Y);
+             g->DrawLine(pen, tr->X, tr->Y, br->X, br->Y);
          }
 };
 }
