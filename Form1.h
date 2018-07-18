@@ -314,8 +314,9 @@ private: System::Void VideoPlaybackPannel_Paint(System::Object^  sender, System:
              g->Clear(Color::White);
              Bitmap^ pic = gcnew Bitmap(L"baseketball_1.bmp");
              Int32 picWidth = 1280, picHeight = 720;
-             Bitmap^ newpic = gcnew Bitmap(picWidth, picHeight, PixelFormat::Format24bppRgb);
+             //Bitmap^ newpic = gcnew Bitmap(picWidth, picHeight, PixelFormat::Format24bppRgb);
              System::Drawing::Rectangle rect = System::Drawing::Rectangle(0, 0, picWidth, picHeight);
+             Bitmap^ newpic = pic->Clone(rect, PixelFormat::Format24bppRgb);
              BitmapData^ bmpData = newpic->LockBits(rect, ImageLockMode::ReadWrite, newpic->PixelFormat);
              IntPtr ptr = bmpData->Scan0;
              Int32 cnt;
@@ -337,9 +338,9 @@ private: System::Void VideoPlaybackPannel_Paint(System::Object^  sender, System:
                  char* p = (char *)ptr.ToPointer();
                  for(cnt = 0; cnt < bytes; cnt += 3)
                  {
-                     p[cnt] = 255;
-                     p[cnt + 1] = 9;
-                     p[cnt + 2] = 55;
+                     p[cnt] += 40;      // blue
+                     //p[cnt + 1] = 9;  // green
+                     p[cnt + 2] += 55; // red
                  }
              }
              newpic->UnlockBits(bmpData);
