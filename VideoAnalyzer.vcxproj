@@ -97,6 +97,24 @@
     <ClInclude Include="Form1.h">
       <FileType>CppForm</FileType>
     </ClInclude>
+    <ClInclude Include="include\libavcodec\ac3_parser.h" />
+    <ClInclude Include="include\libavcodec\adts_parser.h" />
+    <ClInclude Include="include\libavcodec\avcodec.h" />
+    <ClInclude Include="include\libavcodec\avdct.h" />
+    <ClInclude Include="include\libavcodec\avfft.h" />
+    <ClInclude Include="include\libavcodec\d3d11va.h" />
+    <ClInclude Include="include\libavcodec\dirac.h" />
+    <ClInclude Include="include\libavcodec\dv_profile.h" />
+    <ClInclude Include="include\libavcodec\dxva2.h" />
+    <ClInclude Include="include\libavcodec\jni.h" />
+    <ClInclude Include="include\libavcodec\mediacodec.h" />
+    <ClInclude Include="include\libavcodec\qsv.h" />
+    <ClInclude Include="include\libavcodec\vaapi.h" />
+    <ClInclude Include="include\libavcodec\vdpau.h" />
+    <ClInclude Include="include\libavcodec\version.h" />
+    <ClInclude Include="include\libavcodec\videotoolbox.h" />
+    <ClInclude Include="include\libavcodec\vorbis_parser.h" />
+    <ClInclude Include="include\libavcodec\xvmc.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
