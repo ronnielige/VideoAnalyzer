@@ -62,6 +62,10 @@ namespace VideoAnalyzer {
     private: System::Windows::Forms::Panel^  VideoPlaybackPannel;
     private: System::Windows::Forms::Panel^  VideoBitratePannel;
     private: System::Windows::Forms::Panel^  VBVBufferPannel;
+    private: System::Windows::Forms::Button^  PlayButton;
+
+    private: System::Windows::Forms::Button^  StopButton;
+    private: System::Windows::Forms::Panel^  ControlPannel;
 
 
     protected: 
@@ -101,8 +105,12 @@ namespace VideoAnalyzer {
             this->VideoPlaybackPannel = (gcnew System::Windows::Forms::Panel());
             this->VideoBitratePannel = (gcnew System::Windows::Forms::Panel());
             this->VBVBufferPannel = (gcnew System::Windows::Forms::Panel());
+            this->PlayButton = (gcnew System::Windows::Forms::Button());
+            this->StopButton = (gcnew System::Windows::Forms::Button());
+            this->ControlPannel = (gcnew System::Windows::Forms::Panel());
             this->menuStrip1->SuspendLayout();
             this->VideoInfoPannel->SuspendLayout();
+            this->ControlPannel->SuspendLayout();
             this->SuspendLayout();
             // 
             // menuStrip1
@@ -111,7 +119,7 @@ namespace VideoAnalyzer {
                 this->settingToolStripMenuItem, this->windowsToolStripMenuItem, this->aboutToolStripMenuItem});
             this->menuStrip1->Location = System::Drawing::Point(0, 0);
             this->menuStrip1->Name = L"menuStrip1";
-            this->menuStrip1->Size = System::Drawing::Size(985, 25);
+            this->menuStrip1->Size = System::Drawing::Size(954, 25);
             this->menuStrip1->TabIndex = 0;
             this->menuStrip1->Text = L"menuStrip1";
             // 
@@ -208,7 +216,7 @@ namespace VideoAnalyzer {
             this->VideoInfoPannel->Controls->Add(this->label1);
             this->VideoInfoPannel->Location = System::Drawing::Point(11, 23);
             this->VideoInfoPannel->Name = L"VideoInfoPannel";
-            this->VideoInfoPannel->Size = System::Drawing::Size(138, 529);
+            this->VideoInfoPannel->Size = System::Drawing::Size(138, 668);
             this->VideoInfoPannel->TabIndex = 1;
             // 
             // label3
@@ -248,7 +256,7 @@ namespace VideoAnalyzer {
             this->VideoPlaybackPannel->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
             this->VideoPlaybackPannel->Location = System::Drawing::Point(150, 23);
             this->VideoPlaybackPannel->Name = L"VideoPlaybackPannel";
-            this->VideoPlaybackPannel->Size = System::Drawing::Size(834, 361);
+            this->VideoPlaybackPannel->Size = System::Drawing::Size(800, 450);
             this->VideoPlaybackPannel->TabIndex = 2;
             this->VideoPlaybackPannel->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &Form1::VideoPlaybackPannel_Paint);
             // 
@@ -257,32 +265,64 @@ namespace VideoAnalyzer {
             this->VideoBitratePannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left) 
                 | System::Windows::Forms::AnchorStyles::Right));
             this->VideoBitratePannel->AutoScroll = true;
-            this->VideoBitratePannel->AutoSize = true;
             this->VideoBitratePannel->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
-            this->VideoBitratePannel->Location = System::Drawing::Point(150, 390);
+            this->VideoBitratePannel->Location = System::Drawing::Point(150, 511);
             this->VideoBitratePannel->Name = L"VideoBitratePannel";
-            this->VideoBitratePannel->Size = System::Drawing::Size(405, 162);
+            this->VideoBitratePannel->Size = System::Drawing::Size(399, 180);
             this->VideoBitratePannel->TabIndex = 3;
             this->VideoBitratePannel->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &Form1::VideoBitratePannel_Paint);
             // 
             // VBVBufferPannel
             // 
-            this->VBVBufferPannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left) 
-                | System::Windows::Forms::AnchorStyles::Right));
+            this->VBVBufferPannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Right));
             this->VBVBufferPannel->AutoScroll = true;
             this->VBVBufferPannel->AutoSize = true;
             this->VBVBufferPannel->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
-            this->VBVBufferPannel->Location = System::Drawing::Point(561, 390);
+            this->VBVBufferPannel->Location = System::Drawing::Point(551, 511);
             this->VBVBufferPannel->Name = L"VBVBufferPannel";
-            this->VBVBufferPannel->Size = System::Drawing::Size(422, 162);
+            this->VBVBufferPannel->Size = System::Drawing::Size(399, 180);
             this->VBVBufferPannel->TabIndex = 4;
             this->VBVBufferPannel->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &Form1::VBVBufferPannel_Paint);
+            // 
+            // PlayButton
+            // 
+            this->PlayButton->BackgroundImage = (cli::safe_cast<System::Drawing::Image^  >(resources->GetObject(L"PlayButton.BackgroundImage")));
+            this->PlayButton->BackgroundImageLayout = System::Windows::Forms::ImageLayout::Zoom;
+            this->PlayButton->Location = System::Drawing::Point(0, 0);
+            this->PlayButton->Name = L"PlayButton";
+            this->PlayButton->Size = System::Drawing::Size(54, 35);
+            this->PlayButton->TabIndex = 5;
+            this->PlayButton->Text = L"Play";
+            this->PlayButton->UseVisualStyleBackColor = true;
+            this->PlayButton->Click += gcnew System::EventHandler(this, &Form1::PlayButton_Click);
+            // 
+            // StopButton
+            // 
+            this->StopButton->Location = System::Drawing::Point(60, 0);
+            this->StopButton->Name = L"StopButton";
+            this->StopButton->Size = System::Drawing::Size(54, 35);
+            this->StopButton->TabIndex = 6;
+            this->StopButton->Text = L"Stop";
+            this->StopButton->UseVisualStyleBackColor = true;
+            this->StopButton->Click += gcnew System::EventHandler(this, &Form1::StopButton_Click);
+            // 
+            // ControlPannel
+            // 
+            this->ControlPannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left) 
+                | System::Windows::Forms::AnchorStyles::Right));
+            this->ControlPannel->Controls->Add(this->StopButton);
+            this->ControlPannel->Controls->Add(this->PlayButton);
+            this->ControlPannel->Location = System::Drawing::Point(150, 473);
+            this->ControlPannel->Name = L"ControlPannel";
+            this->ControlPannel->Size = System::Drawing::Size(801, 38);
+            this->ControlPannel->TabIndex = 7;
             // 
             // Form1
             // 
             this->AutoScaleDimensions = System::Drawing::SizeF(6, 12);
             this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-            this->ClientSize = System::Drawing::Size(985, 553);
+            this->ClientSize = System::Drawing::Size(954, 705);
+            this->Controls->Add(this->ControlPannel);
             this->Controls->Add(this->VBVBufferPannel);
             this->Controls->Add(this->VideoBitratePannel);
             this->Controls->Add(this->VideoPlaybackPannel);
@@ -298,6 +338,7 @@ namespace VideoAnalyzer {
             this->menuStrip1->PerformLayout();
             this->VideoInfoPannel->ResumeLayout(false);
             this->VideoInfoPannel->PerformLayout();
+            this->ControlPannel->ResumeLayout(false);
             this->ResumeLayout(false);
             this->PerformLayout();
 
@@ -310,43 +351,43 @@ namespace VideoAnalyzer {
              }
 
 private: System::Void VideoPlaybackPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
-             Graphics^ g = VideoPlaybackPannel->CreateGraphics();
-             g->Clear(Color::White);
-             Bitmap^ pic = gcnew Bitmap(L"baseketball_1.bmp");
-             Int32 picWidth = 1280, picHeight = 720;
-             //Bitmap^ newpic = gcnew Bitmap(picWidth, picHeight, PixelFormat::Format24bppRgb);
-             System::Drawing::Rectangle rect = System::Drawing::Rectangle(0, 0, picWidth, picHeight);
-             Bitmap^ newpic = pic->Clone(rect, PixelFormat::Format24bppRgb);
-             BitmapData^ bmpData = newpic->LockBits(rect, ImageLockMode::ReadWrite, newpic->PixelFormat);
-             IntPtr ptr = bmpData->Scan0;
-             Int32 cnt;
-             int bytes = Math::Abs(bmpData->Stride) * newpic->Height;
-             if(0 /* Method 1: */)
-             {
-                 array<Byte>^ rgbValues = gcnew array<Byte>(bytes);
-                 for(cnt = 0; cnt < rgbValues->Length; cnt += 3)
-                 {
-                     rgbValues[cnt] = 87;
-                     rgbValues[cnt + 1] = 055;
-                     rgbValues[cnt + 2] = 253;
-                 }
-                 System::Runtime::InteropServices::Marshal::Copy(rgbValues, 0, ptr, bytes);
-             }
+             //Graphics^ g = VideoPlaybackPannel->CreateGraphics();
+             //g->Clear(Color::White);
+             //Bitmap^ pic = gcnew Bitmap(L"baseketball_1.bmp");
+             //Int32 picWidth = 1280, picHeight = 720;
+             ////Bitmap^ newpic = gcnew Bitmap(picWidth, picHeight, PixelFormat::Format24bppRgb);
+             //System::Drawing::Rectangle rect = System::Drawing::Rectangle(0, 0, picWidth, picHeight);
+             //Bitmap^ newpic = pic->Clone(rect, PixelFormat::Format24bppRgb);
+             //BitmapData^ bmpData = newpic->LockBits(rect, ImageLockMode::ReadWrite, newpic->PixelFormat);
+             //IntPtr ptr = bmpData->Scan0;
+             //Int32 cnt;
+             //int bytes = Math::Abs(bmpData->Stride) * newpic->Height;
+             //if(0 /* Method 1: */)
+             //{
+             //    array<Byte>^ rgbValues = gcnew array<Byte>(bytes);
+             //    for(cnt = 0; cnt < rgbValues->Length; cnt += 3)
+             //    {
+             //        rgbValues[cnt] = 87;
+             //        rgbValues[cnt + 1] = 055;
+             //        rgbValues[cnt + 2] = 253;
+             //    }
+             //    System::Runtime::InteropServices::Marshal::Copy(rgbValues, 0, ptr, bytes);
+             //}
 
-             if(1 /* Method 2: directly operate bmpData */)
-             {
-                 char* p = (char *)ptr.ToPointer();
-                 for(cnt = 0; cnt < bytes; cnt += 3)
-                 {
-                     p[cnt] += 40;      // blue
-                     //p[cnt + 1] = 9;  // green
-                     p[cnt + 2] += 55; // red
-                 }
-             }
-             newpic->UnlockBits(bmpData);
-             showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, newpic);
+             //if(1 /* Method 2: directly operate bmpData */)
+             //{
+             //    char* p = (char *)ptr.ToPointer();
+             //    for(cnt = 0; cnt < bytes; cnt += 3)
+             //    {
+             //        //p[cnt] += 40;      // blue
+             //        //p[cnt + 1] = 9;  // green
+             //        //p[cnt + 2] += 255; // red
+             //    }
+             //}
+             //newpic->UnlockBits(bmpData);
+             //showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, newpic);
 
-             delete g;
+             //delete g;
          }
 
 private: System::Void VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
@@ -412,6 +453,52 @@ private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 Gri
              g->DrawLine(pen, tl->X, tl->Y, bl->X, bl->Y);
              g->DrawLine(pen, bl->X, bl->Y, br->X, br->Y);
              g->DrawLine(pen, tr->X, tr->Y, br->X, br->Y);
+         }
+
+private: System::Void StopButton_Click(System::Object^  sender, System::EventArgs^  e) {
+             Graphics^ g = VideoPlaybackPannel->CreateGraphics();
+             g->Clear(Color::White);
+             delete g;
+         }
+
+private: System::Void PlayButton_Click(System::Object^  sender, System::EventArgs^  e) {
+             Graphics^ g = VideoPlaybackPannel->CreateGraphics();
+             g->Clear(Color::White);
+             Bitmap^ pic = gcnew Bitmap(mfilename);
+             Int32 picWidth = pic->Width, picHeight = pic->Height;
+             //Bitmap^ newpic = gcnew Bitmap(picWidth, picHeight, PixelFormat::Format24bppRgb);
+             System::Drawing::Rectangle rect = System::Drawing::Rectangle(0, 0, picWidth, picHeight);
+             Bitmap^ newpic = pic->Clone(rect, PixelFormat::Format24bppRgb);
+             BitmapData^ bmpData = newpic->LockBits(rect, ImageLockMode::ReadWrite, newpic->PixelFormat);
+             IntPtr ptr = bmpData->Scan0;
+             Int32 cnt;
+             int bytes = Math::Abs(bmpData->Stride) * newpic->Height;
+             if(0 /* Method 1: */)
+             {
+                 array<Byte>^ rgbValues = gcnew array<Byte>(bytes);
+                 for(cnt = 0; cnt < rgbValues->Length; cnt += 3)
+                 {
+                     rgbValues[cnt] = 87;
+                     rgbValues[cnt + 1] = 055;
+                     rgbValues[cnt + 2] = 253;
+                 }
+                 System::Runtime::InteropServices::Marshal::Copy(rgbValues, 0, ptr, bytes);
+             }
+
+             if(1 /* Method 2: directly operate bmpData */)
+             {
+                 char* p = (char *)ptr.ToPointer();
+                 for(cnt = 0; cnt < bytes; cnt += 3)
+                 {
+                     //p[cnt] += 40;      // blue
+                     //p[cnt + 1] = 9;  // green
+                     //p[cnt + 2] += 255; // red
+                 }
+             }
+             newpic->UnlockBits(bmpData);
+             showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, newpic);
+
+             delete g;
          }
 };
 }
