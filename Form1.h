@@ -12,6 +12,7 @@ namespace VideoAnalyzer {
 	using namespace System::Data;
 	using namespace System::Drawing;
     using namespace System::Drawing::Drawing2D;
+    using namespace System::Drawing::Imaging;
 	/// <summary>
 	/// Summary for Form1
 	/// </summary>
@@ -61,6 +62,7 @@ namespace VideoAnalyzer {
     private: System::Windows::Forms::Panel^  VideoPlaybackPannel;
     private: System::Windows::Forms::Panel^  VideoBitratePannel;
     private: System::Windows::Forms::Panel^  VBVBufferPannel;
+
 
     protected: 
 
@@ -311,7 +313,37 @@ private: System::Void VideoPlaybackPannel_Paint(System::Object^  sender, System:
              Graphics^ g = VideoPlaybackPannel->CreateGraphics();
              g->Clear(Color::White);
              Bitmap^ pic = gcnew Bitmap(L"baseketball_1.bmp");
-             showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, pic);
+             Int32 picWidth = 1280, picHeight = 720;
+             Bitmap^ newpic = gcnew Bitmap(picWidth, picHeight, PixelFormat::Format24bppRgb);
+             System::Drawing::Rectangle rect = System::Drawing::Rectangle(0, 0, picWidth, picHeight);
+             BitmapData^ bmpData = newpic->LockBits(rect, ImageLockMode::ReadWrite, newpic->PixelFormat);
+             IntPtr ptr = bmpData->Scan0;
+             Int32 cnt;
+             int bytes = Math::Abs(bmpData->Stride) * newpic->Height;
+             if(0 /* Method 1: */)
+             {
+                 array<Byte>^ rgbValues = gcnew array<Byte>(bytes);
+                 for(cnt = 0; cnt < rgbValues->Length; cnt += 3)
+                 {
+                     rgbValues[cnt] = 87;
+                     rgbValues[cnt + 1] = 055;
+                     rgbValues[cnt + 2] = 253;
+                 }
+                 System::Runtime::InteropServices::Marshal::Copy(rgbValues, 0, ptr, bytes);
+             }
+
+             if(1 /* Method 2: directly operate bmpData */)
+             {
+                 char* p = (char *)ptr.ToPointer();
+                 for(cnt = 0; cnt < bytes; cnt += 3)
+                 {
+                     p[cnt] = 255;
+                     p[cnt + 1] = 9;
+                     p[cnt + 2] = 55;
+                 }
+             }
+             newpic->UnlockBits(bmpData);
+             showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, newpic);
 
              delete g;
          }
