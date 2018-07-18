@@ -62,13 +62,7 @@ namespace VideoAnalyzer {
     private: System::Windows::Forms::Panel^  VideoBitratePannel;
     private: System::Windows::Forms::Panel^  VBVBufferPannel;
 
-
-
-
     protected: 
-
-
-
 
     private: System::ComponentModel::IContainer^  components;
 
@@ -76,7 +70,6 @@ namespace VideoAnalyzer {
 		/// <summary>
 		/// Required designer variable.
 		/// </summary>
-
 
 #pragma region Windows Form Designer generated code
 		/// <summary>
@@ -313,32 +306,23 @@ namespace VideoAnalyzer {
                  mfilename = openFileDialog1->FileName;
                  this->Text = L"VideoAnalyzer " + mfilename;
              }
+
 private: System::Void VideoPlaybackPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
              Graphics^ g = VideoPlaybackPannel->CreateGraphics();
              g->Clear(Color::White);
              Bitmap^ pic = gcnew Bitmap(L"baseketball_1.bmp");
              showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, pic);
-             Sleep(1000);
-              
-             pic = gcnew Bitmap(L"baseketball_2.bmp");
-             showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, pic);
-             Sleep(1000);
-             
-             pic = gcnew Bitmap(L"baseketball_3.bmp");
-             showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, pic);
-             Sleep(1000);
 
-             pic = gcnew Bitmap(L"baseketball_4.bmp");
-             showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, pic);
-             Sleep(100);
              delete g;
          }
+
 private: System::Void VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
              Graphics^ g = VideoBitratePannel->CreateGraphics();
              g->Clear(Color::White);
              drawGrid(g, VideoBitratePannel->Width, VideoBitratePannel->Height, 20, 20, 5);
              delete g;
          }
+
 private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
              Graphics^ g = VBVBufferPannel->CreateGraphics();
              g->Clear(Color::White);
@@ -363,8 +347,8 @@ private: System::Void showFrame(Graphics^ g, Int32 pannelWidth, Int32 pannelHeig
              tl_y = (pannelHeight - ScaledHeight) / 2;
              br_y = (pannelHeight + ScaledHeight) / 2;
              g->DrawImage(pic, tl_x, tl_y, ScaledWidth, ScaledHeight);
-
          }
+
 private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady)
          {
              Pen^ pen = gcnew Pen(Color::Gray, 1.0);
