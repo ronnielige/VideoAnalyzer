@@ -39,6 +39,11 @@ namespace VideoAnalyzer {
         Thread^ decThread;
         Thread^ rendThread;
 
+        delegate void setResolution(String^ str_res);
+        setResolution^ mSetResDelegate;
+        delegate void setFormat(String^ str_fmt);
+        setFormat^     mSetFmtDelegate;
+
 
 	protected:
 		/// <summary>
@@ -74,7 +79,7 @@ namespace VideoAnalyzer {
     private: System::Windows::Forms::Button^  StopButton;
     private: System::Windows::Forms::Panel^  ControlPannel;
     private: System::Windows::Forms::Label^  resolutionLabel;
-    public: System::Void set_resolution(String^ str)
+    public: System::Void setResolutionMethod(String^ str)
             {
                 resolutionLabel->Text = str;
             }
@@ -237,6 +242,7 @@ namespace VideoAnalyzer {
             this->resolutionLabel->AutoSize = true;
             this->resolutionLabel->Location = System::Drawing::Point(13, 34);
             this->resolutionLabel->Name = L"resolutionLabel";
+            this->resolutionLabel->Text = L"WxH";
             this->resolutionLabel->Size = System::Drawing::Size(0, 12);
             this->resolutionLabel->TabIndex = 3;
             // 

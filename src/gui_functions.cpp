@@ -21,6 +21,8 @@ Form1::Form1(void)
 
     rendThread = gcnew Thread(gcnew ParameterizedThreadStart(&renderThreadProc));
     rendThread->Start(this);
+
+    mSetResDelegate = gcnew setResolution(this, &Form1::setResolutionMethod);
 }
 
 Form1::~Form1()
@@ -132,7 +134,14 @@ System::Void Form1::StopButton_Click(System::Object^  sender, System::EventArgs^
 
 System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^  e) 
 {
-    PlayStat = PS_PLAY;  // start or resume play
+    if(String::IsNullOrEmpty(mfilename)) // input file not choosen yet
+        return;
+
+    pthread_mutex_lock(m_mtxPlayStat);
+    PlayStat = PS_PLAY;
+    pthread_cond_broadcast(m_condPlayCond);  // send exit to threads
+    pthread_mutex_unlock(m_mtxPlayStat);
+
     Graphics^ g = VideoPlaybackPannel->CreateGraphics();
     g->Clear(Color::White);
     Bitmap^ pic = gcnew Bitmap(mfilename);
