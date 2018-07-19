@@ -2,6 +2,14 @@
 
 #include<stdio.h>
 #include<windows.h>
+#include<string>
+#include "w32thread.h"
+enum 
+{
+    PS_NONE  = 0,
+    PS_PLAY  = 1,
+    PS_PAUSE = 2,
+};
 
 namespace VideoAnalyzer {
 
@@ -19,10 +27,12 @@ namespace VideoAnalyzer {
 	public ref class Form1 : public System::Windows::Forms::Form
 	{
 	public:
-        System::String^ mfilename;
+        System::String^ mfilename;  // input filename
+        Int32 PlayStat;
 		Form1(void)
 		{
 			InitializeComponent();
+            PlayStat = PS_NONE;    // init Player Stat 
 			//
 			//TODO: Add the constructor code here
 			//
@@ -66,7 +76,7 @@ namespace VideoAnalyzer {
 
     private: System::Windows::Forms::Button^  StopButton;
     private: System::Windows::Forms::Panel^  ControlPannel;
-
+    private: System::Windows::Forms::Label^  resolutionLabel;
 
     protected: 
 
@@ -99,6 +109,7 @@ namespace VideoAnalyzer {
             this->versionToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
             this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
             this->VideoInfoPannel = (gcnew System::Windows::Forms::Panel());
+            this->resolutionLabel = (gcnew System::Windows::Forms::Label());
             this->label3 = (gcnew System::Windows::Forms::Label());
             this->label2 = (gcnew System::Windows::Forms::Label());
             this->label1 = (gcnew System::Windows::Forms::Label());
@@ -211,6 +222,7 @@ namespace VideoAnalyzer {
             this->VideoInfoPannel->AutoSize = true;
             this->VideoInfoPannel->BackColor = System::Drawing::SystemColors::Control;
             this->VideoInfoPannel->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
+            this->VideoInfoPannel->Controls->Add(this->resolutionLabel);
             this->VideoInfoPannel->Controls->Add(this->label3);
             this->VideoInfoPannel->Controls->Add(this->label2);
             this->VideoInfoPannel->Controls->Add(this->label1);
@@ -218,6 +230,14 @@ namespace VideoAnalyzer {
             this->VideoInfoPannel->Name = L"VideoInfoPannel";
             this->VideoInfoPannel->Size = System::Drawing::Size(138, 668);
             this->VideoInfoPannel->TabIndex = 1;
+            // 
+            // resolutionLabel
+            // 
+            this->resolutionLabel->AutoSize = true;
+            this->resolutionLabel->Location = System::Drawing::Point(13, 34);
+            this->resolutionLabel->Name = L"resolutionLabel";
+            this->resolutionLabel->Size = System::Drawing::Size(0, 12);
+            this->resolutionLabel->TabIndex = 3;
             // 
             // label3
             // 
@@ -231,7 +251,7 @@ namespace VideoAnalyzer {
             // label2
             // 
             this->label2->AutoSize = true;
-            this->label2->Location = System::Drawing::Point(10, 66);
+            this->label2->Location = System::Drawing::Point(10, 78);
             this->label2->Name = L"label2";
             this->label2->Size = System::Drawing::Size(35, 12);
             this->label2->TabIndex = 1;
@@ -344,162 +364,14 @@ namespace VideoAnalyzer {
 
         }
 #pragma endregion
-    private: System::Void openToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
-                 openFileDialog1->ShowDialog();
-                 mfilename = openFileDialog1->FileName;
-                 this->Text = L"VideoAnalyzer " + mfilename;
-             }
-
-private: System::Void VideoPlaybackPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
-             //Graphics^ g = VideoPlaybackPannel->CreateGraphics();
-             //g->Clear(Color::White);
-             //Bitmap^ pic = gcnew Bitmap(L"baseketball_1.bmp");
-             //Int32 picWidth = 1280, picHeight = 720;
-             ////Bitmap^ newpic = gcnew Bitmap(picWidth, picHeight, PixelFormat::Format24bppRgb);
-             //System::Drawing::Rectangle rect = System::Drawing::Rectangle(0, 0, picWidth, picHeight);
-             //Bitmap^ newpic = pic->Clone(rect, PixelFormat::Format24bppRgb);
-             //BitmapData^ bmpData = newpic->LockBits(rect, ImageLockMode::ReadWrite, newpic->PixelFormat);
-             //IntPtr ptr = bmpData->Scan0;
-             //Int32 cnt;
-             //int bytes = Math::Abs(bmpData->Stride) * newpic->Height;
-             //if(0 /* Method 1: */)
-             //{
-             //    array<Byte>^ rgbValues = gcnew array<Byte>(bytes);
-             //    for(cnt = 0; cnt < rgbValues->Length; cnt += 3)
-             //    {
-             //        rgbValues[cnt] = 87;
-             //        rgbValues[cnt + 1] = 055;
-             //        rgbValues[cnt + 2] = 253;
-             //    }
-             //    System::Runtime::InteropServices::Marshal::Copy(rgbValues, 0, ptr, bytes);
-             //}
-
-             //if(1 /* Method 2: directly operate bmpData */)
-             //{
-             //    char* p = (char *)ptr.ToPointer();
-             //    for(cnt = 0; cnt < bytes; cnt += 3)
-             //    {
-             //        //p[cnt] += 40;      // blue
-             //        //p[cnt + 1] = 9;  // green
-             //        //p[cnt + 2] += 255; // red
-             //    }
-             //}
-             //newpic->UnlockBits(bmpData);
-             //showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, newpic);
-
-             //delete g;
-         }
-
-private: System::Void VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
-             Graphics^ g = VideoBitratePannel->CreateGraphics();
-             g->Clear(Color::White);
-             drawGrid(g, VideoBitratePannel->Width, VideoBitratePannel->Height, 20, 20, 5);
-             delete g;
-         }
-
-private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
-             Graphics^ g = VBVBufferPannel->CreateGraphics();
-             g->Clear(Color::White);
-             drawGrid(g, VBVBufferPannel->Width, VBVBufferPannel->Height, 20, 20, 5);
-             delete g;
-         }
-
-private: System::Void showFrame(Graphics^ g, Int32 pannelWidth, Int32 pannelHeight, Bitmap^ pic)
-         {
-             float ScaleY = (float)pannelHeight / pic->Height; 
-             float ScaleX = (float)pannelWidth  / pic->Width; 
-             Int32 ScaledHeight = pannelHeight;
-             Int32 ScaledWidth = pic->Width * ScaleY;
-             Int32 tl_x, tl_y, br_x, br_y;
-             if(ScaledWidth > pannelWidth)
-             {
-                 ScaledWidth  = pannelWidth;
-                 ScaledHeight = pic->Height * ScaleX;
-             }
-             tl_x = (pannelWidth - ScaledWidth) / 2;
-             br_x = (pannelWidth + ScaledWidth) / 2;
-             tl_y = (pannelHeight - ScaledHeight) / 2;
-             br_y = (pannelHeight + ScaledHeight) / 2;
-             g->DrawImage(pic, tl_x, tl_y, ScaledWidth, ScaledHeight);
-         }
-
-private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady)
-         {
-             Pen^ pen = gcnew Pen(Color::Gray, 1.0);
-             Point^ tl = gcnew Point(); // top left position of drawing area
-             tl->X = ipadx;
-             tl->Y = ipady;
-             Point^ br = gcnew Point(); // bottom right position of drawing area
-             br->X = ipadx + (Width - ipadx) / GridSize * GridSize;
-             br->Y = ipady + (Height - ipady) / GridSize * GridSize;
-             Point^ bl = gcnew Point(); // bottom left position of drawing area
-             bl->X = tl->X;
-             bl->Y = br->Y;
-             Point^ tr = gcnew Point(); // bottom left position of drawing area
-             tr->X = br->X;
-             tr->Y = tl->Y;
-
-             pen->DashStyle = DashStyle::DashDot;
-             // vertical grid line
-             for(Int32 i = tl->X; i <= br->X; i += GridSize)
-                 g->DrawLine(pen, i, tl->Y, i, br->Y);
-             // horizontal grid line
-             for(Int32 i = tl->Y; i <= br->Y; i += GridSize)
-                 g->DrawLine(pen, tl->X, i, br->X, i);
-
-             pen->Width = 2.0;
-             pen->DashStyle = DashStyle::Solid;
-             g->DrawLine(pen, tl->X, tl->Y, tr->X, tr->Y);
-             g->DrawLine(pen, tl->X, tl->Y, bl->X, bl->Y);
-             g->DrawLine(pen, bl->X, bl->Y, br->X, br->Y);
-             g->DrawLine(pen, tr->X, tr->Y, br->X, br->Y);
-         }
-
-private: System::Void StopButton_Click(System::Object^  sender, System::EventArgs^  e) {
-             Graphics^ g = VideoPlaybackPannel->CreateGraphics();
-             g->Clear(Color::White);
-             delete g;
-         }
-
-private: System::Void PlayButton_Click(System::Object^  sender, System::EventArgs^  e) {
-             Graphics^ g = VideoPlaybackPannel->CreateGraphics();
-             g->Clear(Color::White);
-             Bitmap^ pic = gcnew Bitmap(mfilename);
-             Int32 picWidth = pic->Width, picHeight = pic->Height;
-             //Bitmap^ newpic = gcnew Bitmap(picWidth, picHeight, PixelFormat::Format24bppRgb);
-             System::Drawing::Rectangle rect = System::Drawing::Rectangle(0, 0, picWidth, picHeight);
-             Bitmap^ newpic = pic->Clone(rect, PixelFormat::Format24bppRgb);
-             BitmapData^ bmpData = newpic->LockBits(rect, ImageLockMode::ReadWrite, newpic->PixelFormat);
-             IntPtr ptr = bmpData->Scan0;
-             Int32 cnt;
-             int bytes = Math::Abs(bmpData->Stride) * newpic->Height;
-             if(0 /* Method 1: */)
-             {
-                 array<Byte>^ rgbValues = gcnew array<Byte>(bytes);
-                 for(cnt = 0; cnt < rgbValues->Length; cnt += 3)
-                 {
-                     rgbValues[cnt] = 87;
-                     rgbValues[cnt + 1] = 055;
-                     rgbValues[cnt + 2] = 253;
-                 }
-                 System::Runtime::InteropServices::Marshal::Copy(rgbValues, 0, ptr, bytes);
-             }
-
-             if(1 /* Method 2: directly operate bmpData */)
-             {
-                 char* p = (char *)ptr.ToPointer();
-                 for(cnt = 0; cnt < bytes; cnt += 3)
-                 {
-                     //p[cnt] += 40;      // blue
-                     //p[cnt + 1] = 9;  // green
-                     //p[cnt + 2] += 255; // red
-                 }
-             }
-             newpic->UnlockBits(bmpData);
-             showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, newpic);
-
-             delete g;
-         }
+private: System::Void openToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e);
+private: System::Void VideoPlaybackPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
+private: System::Void VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
+private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
+private: System::Void showFrame(Graphics^ g, Int32 pannelWidth, Int32 pannelHeight, Bitmap^ pic);
+private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady);
+private: System::Void StopButton_Click(System::Object^  sender, System::EventArgs^  e);
+private: System::Void PlayButton_Click(System::Object^  sender, System::EventArgs^  e);
 };
 }
 

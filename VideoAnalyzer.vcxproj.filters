@@ -39,6 +39,9 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\gui_functions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Form1.h">
@@ -352,6 +355,9 @@
     </ClInclude>
     <ClInclude Include="include\libavutil\xtea.h">
       <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="include\w32thread.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
