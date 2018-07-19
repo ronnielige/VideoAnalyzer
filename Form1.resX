@@ -126,14 +126,14 @@
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="PlayButton.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
-        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
-        YQUAAAAJcEhZcwAADsEAAA7BAbiRa+0AAAFQSURBVDhPYwAB/3NuvaH3vF8GXvaYr5KrIgMWJBbIecsJ
-        Bt/1/Btyz+s/CAff9friedC+Vt5engOqBD+Q8JKQD7rr+R8D3/G8b7PULBSqDDcAGRB4x/0/Lux/w+2A
-        fr2WAVQ5JgAZEHDH7T8+7H/b9Y/nOYeZKokSolBtCAAywO+2y39isO8tl/cO282LGIwZWKHaIQb43nIG
-        ShKPfW453zCepG0NN8D7ltN/kvFNx4/iruLcYAO8bjr8JxV7XrFHGOBxw/4/KdjtvN0N7Vo1hBfcb9j9
-        Jwa7XbJ5b77YED0QBeRdr9v8x4ddrlj/sd1lOlMiBGs0Csi7XLP+jxVftf7veMLygGq+PL6EJCDvdM3y
-        Pwq+CsRnLe/r9qoTTsr8NvyCDpct/jpetfgPwg7nLb6YrtCvITozgYDlNoNe+zOmLy13G8+XjpYmITsz
-        MAAAgBFfK7VdFYEAAAAASUVORK5CYII=
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAO
+        wQAADsEBuJFr7QAAAVBJREFUOE9jAAH/c269ofe8XwZe9pivkqsiAxYkFsh5ywkG3/X8G3LP6z8IB9/1
+        +uJ50L5W3l6eA6oEP5DwkpAPuuv5HwPf8bxvs9QsFKoMNwAZEHjH/T8u7H/D7YB+vZYBVDkmABkQcMft
+        Pz7sf9v1j+c5h5kqiRKiUG0IADLA77bLf2Kw7y2X9w7bzYsYjBlYodohBvjecgZKEo99bjnfMJ6kbQ03
+        wPuW03+S8U3Hj+Ku4txgA7xuOvwnFXtesUcY4HHD/j8p2O283Q3tWjWEF9xv2P0nBrtdsnlvvtgQPRAF
+        5F2v2/zHh12uWP+x3WU6UyIEazQKyLtcs/6PFV+1/u94wvKAar48voQkIO90zfI/Cr4KxGct7+v2qhNO
+        yvw2/IIOly3+Ol61+A/CDuctvpiu0K8hOjOBgOU2g177M6YvLXcbz5eOliYhOzMwAACAEV8rtV0VgQAA
+        AABJRU5ErkJggg==
 </value>
   </data>
   <metadata name="$this.TrayHeight" type="System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">

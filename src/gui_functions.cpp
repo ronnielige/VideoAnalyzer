@@ -122,11 +122,20 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
     openFileDialog1->ShowDialog();
     mfilename = openFileDialog1->FileName;
     this->Text = L"VideoAnalyzer " + mfilename;
+
+    pthread_mutex_lock(m_mtxPlayStat);
+    PlayStat = PS_INIT;
+    pthread_cond_broadcast(m_condPlayCond);  // send init command to threads
+    pthread_mutex_unlock(m_mtxPlayStat);
 }
 
 System::Void Form1::StopButton_Click(System::Object^  sender, System::EventArgs^  e) 
 {
-    PlayStat = PS_PAUSE;  // Stop play
+    pthread_mutex_lock(m_mtxPlayStat);
+    PlayStat = PS_PAUSE;
+    pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
+    pthread_mutex_unlock(m_mtxPlayStat);
+
     Graphics^ g = VideoPlaybackPannel->CreateGraphics();
     g->Clear(Color::White);
     delete g;
@@ -139,7 +148,7 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
 
     pthread_mutex_lock(m_mtxPlayStat);
     PlayStat = PS_PLAY;
-    pthread_cond_broadcast(m_condPlayCond);  // send exit to threads
+    pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
     pthread_mutex_unlock(m_mtxPlayStat);
 
     //Graphics^ g = VideoPlaybackPannel->CreateGraphics();
