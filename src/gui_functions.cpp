@@ -1,27 +1,8 @@
 //Implement gui control functions
 #include "StdAfx.h"
 #include "Form1.h"
-
+#include "player.h"
 using namespace VideoAnalyzer;
-
-System::Void readThreadProc(Object^ data)
-{
-    Form1^ mainForm = (Form1^)data;
-    while(1)
-    {
-        pthread_mutex_lock(mainForm->m_mtxPlayStat);
-        if(mainForm->PlayStat == PS_EXIT) // exit
-        {
-            pthread_mutex_unlock(mainForm->m_mtxPlayStat);
-            return;
-        }
-        mainForm->set_resolution(L"Hello World");
-        while(mainForm->PlayStat != PS_PLAY && mainForm->PlayStat != PS_EXIT) // wait until start play
-            pthread_cond_wait(mainForm->m_condPlayCond, mainForm->m_mtxPlayStat);
-        pthread_mutex_unlock(mainForm->m_mtxPlayStat);
-    }
-}
-
 
 Form1::Form1(void)
 {
@@ -31,17 +12,26 @@ Form1::Form1(void)
     m_condPlayCond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
     pthread_mutex_init(m_mtxPlayStat, NULL);
     pthread_cond_init(m_condPlayCond, NULL);
-    rThread = gcnew Thread(gcnew ParameterizedThreadStart(&readThreadProc));
-    rThread->Start(this);
+
+    readThread = gcnew Thread(gcnew ParameterizedThreadStart(&readThreadProc));
+    readThread->Start(this);
+
+    decThread = gcnew Thread(gcnew ParameterizedThreadStart(&decodeThreadProc));
+    decThread->Start(this);
+
+    rendThread = gcnew Thread(gcnew ParameterizedThreadStart(&renderThreadProc));
+    rendThread->Start(this);
 }
 
 Form1::~Form1()
 {
     pthread_mutex_lock(m_mtxPlayStat);
     PlayStat = PS_EXIT;
-    pthread_cond_broadcast(m_condPlayCond);
+    pthread_cond_broadcast(m_condPlayCond);  // send exit to threads
     pthread_mutex_unlock(m_mtxPlayStat);
-    rThread->Join();
+    readThread->Join();   // wait read   thread to finish
+    decThread->Join();    // wait decode thread to finish
+    rendThread->Join();   // wait render thread to finish
 
     pthread_mutex_destroy(m_mtxPlayStat);
     pthread_cond_destroy(m_condPlayCond);

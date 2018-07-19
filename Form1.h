@@ -35,8 +35,9 @@ namespace VideoAnalyzer {
 
         static pthread_mutex_t* m_mtxPlayStat;
         static pthread_cond_t*  m_condPlayCond;
-        Thread^ rThread;
-        //static System::Void readThreadProc(Object^ data);
+        Thread^ readThread;
+        Thread^ decThread;
+        Thread^ rendThread;
 
 
 	protected:

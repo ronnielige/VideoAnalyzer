@@ -92,6 +92,7 @@
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp" />
     <ClCompile Include="src\gui_functions.cpp" />
+    <ClCompile Include="src\player.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -203,6 +204,7 @@
     <ClInclude Include="include\libavutil\twofish.h" />
     <ClInclude Include="include\libavutil\version.h" />
     <ClInclude Include="include\libavutil\xtea.h" />
+    <ClInclude Include="include\player.h" />
     <ClInclude Include="include\w32thread.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
