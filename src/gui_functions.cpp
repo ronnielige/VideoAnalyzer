@@ -4,6 +4,56 @@
 
 using namespace VideoAnalyzer;
 
+System::Void readThreadProc(Object^ data)
+{
+    Form1^ mainForm = (Form1^)data;
+    while(1)
+    {
+        pthread_mutex_lock(mainForm->m_mtxPlayStat);
+        if(mainForm->PlayStat == PS_EXIT) // exit
+        {
+            pthread_mutex_unlock(mainForm->m_mtxPlayStat);
+            return;
+        }
+        mainForm->set_resolution(L"Hello World");
+        while(mainForm->PlayStat != PS_PLAY && mainForm->PlayStat != PS_EXIT) // wait until start play
+            pthread_cond_wait(mainForm->m_condPlayCond, mainForm->m_mtxPlayStat);
+        pthread_mutex_unlock(mainForm->m_mtxPlayStat);
+    }
+}
+
+
+Form1::Form1(void)
+{
+    InitializeComponent();
+    PlayStat = PS_NONE;    // init Player Stat 
+    m_mtxPlayStat = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+    m_condPlayCond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
+    pthread_mutex_init(m_mtxPlayStat, NULL);
+    pthread_cond_init(m_condPlayCond, NULL);
+    rThread = gcnew Thread(gcnew ParameterizedThreadStart(&readThreadProc));
+    rThread->Start(this);
+}
+
+Form1::~Form1()
+{
+    pthread_mutex_lock(m_mtxPlayStat);
+    PlayStat = PS_EXIT;
+    pthread_cond_broadcast(m_condPlayCond);
+    pthread_mutex_unlock(m_mtxPlayStat);
+    rThread->Join();
+
+    pthread_mutex_destroy(m_mtxPlayStat);
+    pthread_cond_destroy(m_condPlayCond);
+    free(m_mtxPlayStat);
+    free(m_condPlayCond);
+
+    if (components)
+    {
+        delete components;
+    }
+}
+
 System::Void Form1::VideoPlaybackPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
 {
 }

@@ -9,6 +9,7 @@ enum
     PS_NONE  = 0,
     PS_PLAY  = 1,
     PS_PAUSE = 2,
+    PS_EXIT  = 3,
 };
 
 namespace VideoAnalyzer {
@@ -21,6 +22,7 @@ namespace VideoAnalyzer {
 	using namespace System::Drawing;
     using namespace System::Drawing::Drawing2D;
     using namespace System::Drawing::Imaging;
+    using namespace System::Threading;
 	/// <summary>
 	/// Summary for Form1
 	/// </summary>
@@ -29,26 +31,20 @@ namespace VideoAnalyzer {
 	public:
         System::String^ mfilename;  // input filename
         Int32 PlayStat;
-		Form1(void)
-		{
-			InitializeComponent();
-            PlayStat = PS_NONE;    // init Player Stat 
-			//
-			//TODO: Add the constructor code here
-			//
-		}
+		Form1(void);
+
+        static pthread_mutex_t* m_mtxPlayStat;
+        static pthread_cond_t*  m_condPlayCond;
+        Thread^ rThread;
+        //static System::Void readThreadProc(Object^ data);
+
 
 	protected:
 		/// <summary>
 		/// Clean up any resources being used.
 		/// </summary>
-		~Form1()
-		{
-			if (components)
-			{
-				delete components;
-			}
-		}
+		~Form1();
+
     private: System::Windows::Forms::MenuStrip^  menuStrip1;
     protected: 
     private: System::Windows::Forms::ToolStripMenuItem^  fileToolStripMenuItem;
@@ -77,6 +73,10 @@ namespace VideoAnalyzer {
     private: System::Windows::Forms::Button^  StopButton;
     private: System::Windows::Forms::Panel^  ControlPannel;
     private: System::Windows::Forms::Label^  resolutionLabel;
+    public: System::Void set_resolution(String^ str)
+            {
+                resolutionLabel->Text = str;
+            }
 
     protected: 
 
