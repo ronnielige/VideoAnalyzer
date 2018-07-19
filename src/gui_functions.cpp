@@ -22,7 +22,7 @@ Form1::Form1(void)
     rendThread = gcnew Thread(gcnew ParameterizedThreadStart(&renderThreadProc));
     rendThread->Start(this);
 
-    mSetResDelegate = gcnew setResolution(this, &Form1::setResolutionMethod);
+    mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
 }
 
 Form1::~Form1()
@@ -142,44 +142,44 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
     pthread_cond_broadcast(m_condPlayCond);  // send exit to threads
     pthread_mutex_unlock(m_mtxPlayStat);
 
-    Graphics^ g = VideoPlaybackPannel->CreateGraphics();
-    g->Clear(Color::White);
-    Bitmap^ pic = gcnew Bitmap(mfilename);
-    Int32 picWidth = pic->Width, picHeight = pic->Height;
-    char res[20]; 
-    sprintf(res, "%d x %d", picWidth, picHeight);
-    this->resolutionLabel->Text = System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)res);
-    //Bitmap^ newpic = gcnew Bitmap(picWidth, picHeight, PixelFormat::Format24bppRgb);
-    System::Drawing::Rectangle rect = System::Drawing::Rectangle(0, 0, picWidth, picHeight);
-    Bitmap^ newpic = pic->Clone(rect, PixelFormat::Format24bppRgb);
-    BitmapData^ bmpData = newpic->LockBits(rect, ImageLockMode::ReadWrite, newpic->PixelFormat);
-    IntPtr ptr = bmpData->Scan0;
-    Int32 cnt;
-    int bytes = Math::Abs(bmpData->Stride) * newpic->Height;
-    if(0 /* Method 1: */)
-    {
-        array<Byte>^ rgbValues = gcnew array<Byte>(bytes);
-        for(cnt = 0; cnt < rgbValues->Length; cnt += 3)
-        {
-            rgbValues[cnt] = 87;
-            rgbValues[cnt + 1] = 055;
-            rgbValues[cnt + 2] = 253;
-        }
-        System::Runtime::InteropServices::Marshal::Copy(rgbValues, 0, ptr, bytes);
-    }
+    //Graphics^ g = VideoPlaybackPannel->CreateGraphics();
+    //g->Clear(Color::White);
+    //Bitmap^ pic = gcnew Bitmap(mfilename);
+    //Int32 picWidth = pic->Width, picHeight = pic->Height;
+    //char res[20]; 
+    //sprintf(res, "%d x %d", picWidth, picHeight);
+    //VideoInfoLabel->Text += "\nResolution:\n    " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)res);
+    ////Bitmap^ newpic = gcnew Bitmap(picWidth, picHeight, PixelFormat::Format24bppRgb);
+    //System::Drawing::Rectangle rect = System::Drawing::Rectangle(0, 0, picWidth, picHeight);
+    //Bitmap^ newpic = pic->Clone(rect, PixelFormat::Format24bppRgb);
+    //BitmapData^ bmpData = newpic->LockBits(rect, ImageLockMode::ReadWrite, newpic->PixelFormat);
+    //IntPtr ptr = bmpData->Scan0;
+    //Int32 cnt;
+    //int bytes = Math::Abs(bmpData->Stride) * newpic->Height;
+    //if(0 /* Method 1: */)
+    //{
+    //    array<Byte>^ rgbValues = gcnew array<Byte>(bytes);
+    //    for(cnt = 0; cnt < rgbValues->Length; cnt += 3)
+    //    {
+    //        rgbValues[cnt] = 87;
+    //        rgbValues[cnt + 1] = 055;
+    //        rgbValues[cnt + 2] = 253;
+    //    }
+    //    System::Runtime::InteropServices::Marshal::Copy(rgbValues, 0, ptr, bytes);
+    //}
 
-    if(1 /* Method 2: directly operate bmpData */)
-    {
-        char* p = (char *)ptr.ToPointer();
-        for(cnt = 0; cnt < bytes; cnt += 3)
-        {
-            //p[cnt] += 40;      // blue
-            //p[cnt + 1] = 9;  // green
-            //p[cnt + 2] += 255; // red
-        }
-    }
-    newpic->UnlockBits(bmpData);
-    showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, newpic);
+    //if(1 /* Method 2: directly operate bmpData */)
+    //{
+    //    char* p = (char *)ptr.ToPointer();
+    //    for(cnt = 0; cnt < bytes; cnt += 3)
+    //    {
+    //        //p[cnt] += 40;      // blue
+    //        //p[cnt + 1] = 9;  // green
+    //        //p[cnt + 2] += 255; // red
+    //    }
+    //}
+    //newpic->UnlockBits(bmpData);
+    //showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, newpic);
 
-    delete g;
+    //delete g;
 }

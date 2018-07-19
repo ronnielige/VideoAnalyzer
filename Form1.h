@@ -39,11 +39,8 @@ namespace VideoAnalyzer {
         Thread^ decThread;
         Thread^ rendThread;
 
-        delegate void setResolution(String^ str_res);
-        setResolution^ mSetResDelegate;
-        delegate void setFormat(String^ str_fmt);
-        setFormat^     mSetFmtDelegate;
-
+        delegate void setVideoInfo(String^ str_res);
+        setVideoInfo^ mSetVidInfDelegate;
 
 	protected:
 		/// <summary>
@@ -67,10 +64,8 @@ namespace VideoAnalyzer {
 
     private: System::Windows::Forms::OpenFileDialog^  openFileDialog1;
     private: System::Windows::Forms::Panel^  VideoInfoPannel;
+    private: System::Windows::Forms::Label^  VideoInfoLabel;
 
-    private: System::Windows::Forms::Label^  label1;
-    private: System::Windows::Forms::Label^  label3;
-    private: System::Windows::Forms::Label^  label2;
     private: System::Windows::Forms::Panel^  VideoPlaybackPannel;
     private: System::Windows::Forms::Panel^  VideoBitratePannel;
     private: System::Windows::Forms::Panel^  VBVBufferPannel;
@@ -78,10 +73,10 @@ namespace VideoAnalyzer {
 
     private: System::Windows::Forms::Button^  StopButton;
     private: System::Windows::Forms::Panel^  ControlPannel;
-    private: System::Windows::Forms::Label^  resolutionLabel;
-    public: System::Void setResolutionMethod(String^ str)
+
+    public: System::Void setVideoInfoMethod(String^ str)
             {
-                resolutionLabel->Text = str;
+                VideoInfoLabel->Text = L"VideoInfo:\n" + str;
             }
 
     protected: 
@@ -115,10 +110,7 @@ namespace VideoAnalyzer {
             this->versionToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
             this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
             this->VideoInfoPannel = (gcnew System::Windows::Forms::Panel());
-            this->resolutionLabel = (gcnew System::Windows::Forms::Label());
-            this->label3 = (gcnew System::Windows::Forms::Label());
-            this->label2 = (gcnew System::Windows::Forms::Label());
-            this->label1 = (gcnew System::Windows::Forms::Label());
+            this->VideoInfoLabel = (gcnew System::Windows::Forms::Label());
             this->VideoPlaybackPannel = (gcnew System::Windows::Forms::Panel());
             this->VideoBitratePannel = (gcnew System::Windows::Forms::Panel());
             this->VBVBufferPannel = (gcnew System::Windows::Forms::Panel());
@@ -228,50 +220,20 @@ namespace VideoAnalyzer {
             this->VideoInfoPannel->AutoSize = true;
             this->VideoInfoPannel->BackColor = System::Drawing::SystemColors::Control;
             this->VideoInfoPannel->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
-            this->VideoInfoPannel->Controls->Add(this->resolutionLabel);
-            this->VideoInfoPannel->Controls->Add(this->label3);
-            this->VideoInfoPannel->Controls->Add(this->label2);
-            this->VideoInfoPannel->Controls->Add(this->label1);
+            this->VideoInfoPannel->Controls->Add(this->VideoInfoLabel);
             this->VideoInfoPannel->Location = System::Drawing::Point(11, 23);
             this->VideoInfoPannel->Name = L"VideoInfoPannel";
             this->VideoInfoPannel->Size = System::Drawing::Size(138, 668);
             this->VideoInfoPannel->TabIndex = 1;
             // 
-            // resolutionLabel
+            // VideoInfoLabel
             // 
-            this->resolutionLabel->AutoSize = true;
-            this->resolutionLabel->Location = System::Drawing::Point(13, 34);
-            this->resolutionLabel->Name = L"resolutionLabel";
-            this->resolutionLabel->Text = L"WxH";
-            this->resolutionLabel->Size = System::Drawing::Size(0, 12);
-            this->resolutionLabel->TabIndex = 3;
-            // 
-            // label3
-            // 
-            this->label3->AutoSize = true;
-            this->label3->Location = System::Drawing::Point(9, 134);
-            this->label3->Name = L"label3";
-            this->label3->Size = System::Drawing::Size(47, 12);
-            this->label3->TabIndex = 2;
-            this->label3->Text = L"BitRate";
-            // 
-            // label2
-            // 
-            this->label2->AutoSize = true;
-            this->label2->Location = System::Drawing::Point(10, 78);
-            this->label2->Name = L"label2";
-            this->label2->Size = System::Drawing::Size(35, 12);
-            this->label2->TabIndex = 1;
-            this->label2->Text = L"Codec";
-            // 
-            // label1
-            // 
-            this->label1->AutoSize = true;
-            this->label1->Location = System::Drawing::Point(10, 16);
-            this->label1->Name = L"label1";
-            this->label1->Size = System::Drawing::Size(65, 12);
-            this->label1->TabIndex = 0;
-            this->label1->Text = L"Resolution";
+            this->VideoInfoLabel->AutoSize = true;
+            this->VideoInfoLabel->Location = System::Drawing::Point(10, 16);
+            this->VideoInfoLabel->Name = L"VideoInfoLabel";
+            this->VideoInfoLabel->Size = System::Drawing::Size(65, 12);
+            this->VideoInfoLabel->TabIndex = 0;
+            this->VideoInfoLabel->Text = L"VideoInfo:";
             // 
             // VideoPlaybackPannel
             // 
