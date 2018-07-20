@@ -12,6 +12,7 @@ Form1::Form1(void)
     m_condPlayCond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
     pthread_mutex_init(m_mtxPlayStat, NULL);
     pthread_cond_init(m_condPlayCond, NULL);
+    m_vs = (VideoState*)malloc(sizeof(VideoState));
 
     readThread = gcnew Thread(gcnew ParameterizedThreadStart(&readThreadProc));
     readThread->Start(this);
@@ -39,6 +40,7 @@ Form1::~Form1()
     pthread_cond_destroy(m_condPlayCond);
     free(m_mtxPlayStat);
     free(m_condPlayCond);
+    free(m_vs);
 
     if (components)
     {

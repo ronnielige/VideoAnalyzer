@@ -4,6 +4,7 @@
 #include<windows.h>
 #include<string>
 #include "w32thread.h"
+#include "common.h"
 enum 
 {
     PS_NONE  = 0,
@@ -12,6 +13,123 @@ enum
     PS_PAUSE = 3,
     PS_EXIT  = 4,
 };
+
+extern "C"
+{
+#define __STDC_CONSTANT_MACROS
+#include "libavutil\avutil.h"
+#include "libavformat\avformat.h"
+#include "libavcodec\avcodec.h"
+#include "libswscale\swscale.h"
+};
+typedef struct MyAVPacketList {
+    AVPacket pkt;
+    struct MyAVPacketList *next;
+    int serial;
+} MyAVPacketList;
+
+typedef struct PacketQueue {
+    MyAVPacketList *first_pkt, *last_pkt;
+    int nb_packets;
+    int size;
+    int64_t duration;
+    int abort_request;
+    int serial;
+    pthread_mutex_t *mutex;
+    pthread_cond_t  *cond;
+} PacketQueue;
+
+typedef struct Clock {
+    double pts;           /* clock base */
+    double pts_drift;     /* clock base minus time at which we updated the clock */
+    double last_updated;
+    double speed;
+    int serial;           /* clock is based on a packet with this serial */
+    int paused;
+    int *queue_serial;    /* pointer to the current packet queue serial, used for obsolete clock detection */
+} Clock;
+
+/* Common struct for handling all types of decoded data and allocated render buffers. */
+typedef struct Frame {
+    AVFrame *frame;
+    AVSubtitle sub;
+    AVSubtitleRect **subrects;  /* rescaled subtitle rectangles in yuva */
+    int serial;
+    double pts;           /* presentation timestamp for the frame */
+    double duration;      /* estimated duration of the frame */
+    int64_t pos;          /* byte position of the frame in the input file */
+    int allocated;
+    int reallocate;
+    int width;
+    int height;
+    AVRational sar;
+} Frame;
+
+#define VIDEO_PICTURE_QUEUE_SIZE 3
+#define SUBPICTURE_QUEUE_SIZE 16
+#define SAMPLE_QUEUE_SIZE 9
+#define FRAME_QUEUE_SIZE FFMAX(SAMPLE_QUEUE_SIZE, FFMAX(VIDEO_PICTURE_QUEUE_SIZE, SUBPICTURE_QUEUE_SIZE))
+
+typedef struct FrameQueue {
+    Frame queue[FRAME_QUEUE_SIZE];
+    int rindex;
+    int windex;
+    int size;
+    int max_size;
+    int keep_last;
+    int rindex_shown;
+    pthread_mutex_t *mutex;
+    pthread_cond_t  *cond;
+    PacketQueue     *pktq;
+} FrameQueue;
+
+typedef struct Decoder {
+    AVPacket pkt;
+    AVPacket pkt_temp;
+    PacketQueue *queue;
+    AVCodecContext *avctx;
+    int pkt_serial;
+    int finished;
+    int packet_pending;
+    pthread_cond_t *empty_queue_cond;
+    int64_t start_pts;
+    AVRational start_pts_tb;
+    int64_t next_pts;
+    AVRational next_pts_tb;
+} Decoder;
+
+
+typedef struct VideoState {
+    int seek_req;
+    int seek_flags;
+    int64_t seek_pos;
+    int64_t seek_rel;
+    int read_pause_return;
+    AVFormatContext *ic;
+    int realtime;
+
+    Clock audclk;
+    Clock vidclk;
+    Clock extclk;
+
+    FrameQueue pictq;
+    FrameQueue subpq;
+    FrameQueue sampq;
+
+    Decoder auddec;
+    Decoder viddec;
+    Decoder subdec;
+
+    int viddec_width;
+    int viddec_height;
+
+    int video_stream;
+    AVStream *video_st;
+    PacketQueue videoq;
+    double max_frame_duration;      // maximum duration of a frame - above this, we consider the jump a timestamp discontinuity
+    struct SwsContext *img_convert_ctx;
+    int eof;
+} VideoState;
 
 namespace VideoAnalyzer {
 
@@ -31,14 +149,15 @@ namespace VideoAnalyzer {
 	{
 	public:
         System::String^ mfilename;  // input filename
-        Int32 PlayStat;
 		Form1(void);
 
+        Int32 PlayStat;
         static pthread_mutex_t* m_mtxPlayStat;
         static pthread_cond_t*  m_condPlayCond;
         Thread^ readThread;
         Thread^ decThread;
         Thread^ rendThread;
+        VideoState* m_vs;
 
         delegate void setVideoInfo(String^ str_res);
         setVideoInfo^ mSetVidInfDelegate;
