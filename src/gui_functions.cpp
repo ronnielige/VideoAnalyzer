@@ -119,6 +119,12 @@ System::Void Form1::drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridS
 
 System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) 
 {
+    // First reset Play stat
+    pthread_mutex_lock(m_mtxPlayStat);
+    PlayStat = PS_NONE;
+    pthread_cond_broadcast(m_condPlayCond);  // send init command to threads
+    pthread_mutex_unlock(m_mtxPlayStat);
+
     openFileDialog1->ShowDialog();
     mfilename = openFileDialog1->FileName;
     this->Text = L"VideoAnalyzer " + mfilename;
