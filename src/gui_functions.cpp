@@ -4,6 +4,50 @@
 #include "player.h"
 using namespace VideoAnalyzer;
 
+void packet_queue_put(PacketQueue* pq, AVPacket* pkt)
+{
+    pthread_mutex_lock(pq->mtx);
+    if(pq->firstNode == NULL) // queue empty
+    {
+        pq->firstNode = (PacketListNode *)malloc(sizeof(PacketListNode));
+        pq->firstNode->pkt  = pkt;
+        pq->firstNode->next = NULL;
+        pq->lastNode = pq->firstNode;
+        pq->size++;
+    }
+    else
+    {
+        while(pq->size >= pq->maxsize) // packet queue full
+            pthread_cond_wait(pq->cond, pq->mtx);
+
+        PacketListNode* nnode = (PacketListNode *)malloc(sizeof(PacketListNode));
+        nnode->pkt  = pkt;
+        nnode->next = NULL;
+        pq->lastNode->next = nnode;
+        pq->lastNode = pq->lastNode->next;
+        pq->size++;
+    }
+    pthread_cond_signal(pq->cond);
+    pthread_mutex_unlock(pq->mtx);
+}
+
+AVPacket* packet_queue_get(PacketQueue* pq)
+{
+    AVPacket* rpkt;
+    PacketListNode* hdNode;
+    pthread_mutex_lock(pq->mtx);
+    while(pq->size == 0 || pq->firstNode == NULL) // packet queue empty, wait
+        pthread_cond_wait(pq->cond, pq->mtx);
+    hdNode = pq->firstNode;
+    rpkt = pq->firstNode->pkt;
+    pq->firstNode = pq->firstNode->next;
+    free(hdNode);
+    pq->size--;
+    pthread_cond_signal(pq->cond); // inform 
+    pthread_mutex_unlock(pq->mtx);
+    return rpkt;
+}
+
 Form1::Form1(void)
 {
     InitializeComponent();
@@ -12,7 +56,21 @@ Form1::Form1(void)
     m_condPlayCond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
     pthread_mutex_init(m_mtxPlayStat, NULL);
     pthread_cond_init(m_condPlayCond, NULL);
-    m_vs = (VideoState*)malloc(sizeof(VideoState));
+
+    m_pl = (VideoPlayer*)malloc(sizeof(VideoPlayer));
+    m_pl->videoq.size    = 0;
+    m_pl->videoq.maxsize = 30;
+    m_pl->videoq.firstNode = m_pl->videoq.lastNode = NULL;
+    m_pl->videoq.mtx  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+    m_pl->videoq.cond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
+    pthread_mutex_init(m_pl->videoq.mtx, NULL);
+    pthread_cond_init(m_pl->videoq.cond, NULL);
+
+    m_pl->pictq.size = m_pl->pictq.ridx = m_pl->pictq.widx = 0;
+    m_pl->pictq.mtx  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+    m_pl->pictq.cond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
+    pthread_mutex_init(m_pl->pictq.mtx, NULL);
+    pthread_cond_init(m_pl->pictq.cond, NULL);
 
     readThread = gcnew Thread(gcnew ParameterizedThreadStart(&readThreadProc));
     readThread->Start(this);
@@ -36,11 +94,30 @@ Form1::~Form1()
     decThread->Join();    // wait decode thread to finish
     rendThread->Join();   // wait render thread to finish
 
+    PacketListNode* nd = m_pl->videoq.firstNode;
+    while(nd)
+    {
+        m_pl->videoq.firstNode = m_pl->videoq.firstNode->next; // move to next
+        free(nd);
+        nd = m_pl->videoq.firstNode;
+    }
+
+    pthread_mutex_destroy(m_pl->videoq.mtx);
+    pthread_cond_destroy(m_pl->videoq.cond);
+    free(m_pl->videoq.mtx);
+    free(m_pl->videoq.cond);
+
+    pthread_mutex_destroy(m_pl->pictq.mtx);
+    pthread_cond_destroy(m_pl->pictq.cond);
+    free(m_pl->pictq.mtx);
+    free(m_pl->pictq.cond);
+    free(m_pl);
+
     pthread_mutex_destroy(m_mtxPlayStat);
     pthread_cond_destroy(m_condPlayCond);
     free(m_mtxPlayStat);
     free(m_condPlayCond);
-    free(m_vs);
+    
 
     if (components)
     {

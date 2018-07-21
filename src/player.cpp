@@ -21,9 +21,9 @@ int stream_component_open(AVFormatContext *ic, AVCodecContext** avctx, AVCodec**
 {
     if (stream_index < 0 || stream_index >= ic->nb_streams)
         return -1;
-	*avctx = ic->streams[stream_index]->codec;
-	*codec = avcodec_find_decoder((*avctx)->codec_id);
-	return 0;
+    *avctx = ic->streams[stream_index]->codec;
+    *codec = avcodec_find_decoder((*avctx)->codec_id);
+    return 0;
 }
 
 void dump_format(AVFormatContext* ic, int vid_stream_index, String^& videoInfo)
@@ -74,9 +74,9 @@ System::Void readThreadProc(Object^ data)
     char* fname = NULL;
     int err;
     AVFormatContext* ic;
-	AVCodecContext *avctx;
-	AVCodec* codec;
-
+    AVCodecContext *avctx;
+    AVCodec* codec;
+    av_register_all();
     int i;
     if(!ic)
         return;
@@ -140,7 +140,7 @@ System::Void readThreadProc(Object^ data)
                 vcodecpar = st->codecpar;
                 AVRational sar = av_guess_sample_aspect_ratio(ic, st, NULL);
                 VidInfoStr += L"\nResolution:\n   " + vcodecpar->width + " x " + vcodecpar->height + "\n"; 
-				stream_component_open(ic, &avctx, &codec, st_index[AVMEDIA_TYPE_VIDEO]);
+                stream_component_open(ic, &avctx, &codec, st_index[AVMEDIA_TYPE_VIDEO]);
                 VidInfoStr += L"\nVideo Codec:\n   " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)codec->long_name) + "\n"; 
 
                 dump_format(ic, st_index[AVMEDIA_TYPE_VIDEO], VidInfoStr);
@@ -150,10 +150,14 @@ System::Void readThreadProc(Object^ data)
 
             mainForm->Invoke(mainForm->mSetVidInfDelegate, VidInfoStr);
 
-			pthread_mutex_lock(mainForm->m_mtxPlayStat);
-			mainForm->PlayStat = PS_NONE;  // Finished Init, then just to wait
-			pthread_cond_broadcast(mainForm->m_condPlayCond); 
-			pthread_mutex_unlock(mainForm->m_mtxPlayStat);
+            pthread_mutex_lock(mainForm->m_mtxPlayStat);
+            mainForm->PlayStat = PS_NONE;  // Finished Init, then just to wait
+            pthread_cond_broadcast(mainForm->m_condPlayCond); 
+            pthread_mutex_unlock(mainForm->m_mtxPlayStat);
+        } // PS_INIT
+
+        if(mainForm->PlayStat == PS_PLAY)
+        {
         }
     }
 }

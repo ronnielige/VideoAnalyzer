@@ -4,11 +4,10 @@
 #include<windows.h>
 #include<string>
 #include "w32thread.h"
-#include "common.h"
 enum 
 {
     PS_NONE  = 0,
-	PS_INIT  = 1,
+    PS_INIT  = 1,
     PS_PLAY  = 2,
     PS_PAUSE = 3,
     PS_EXIT  = 4,
@@ -22,134 +21,62 @@ extern "C"
 #include "libavcodec\avcodec.h"
 #include "libswscale\swscale.h"
 };
-typedef struct MyAVPacketList {
-    AVPacket pkt;
-    struct MyAVPacketList *next;
-    int serial;
-} MyAVPacketList;
 
-typedef struct PacketQueue {
-    MyAVPacketList *first_pkt, *last_pkt;
-    int nb_packets;
-    int size;
-    int64_t duration;
-    int abort_request;
-    int serial;
-    pthread_mutex_t *mutex;
-    pthread_cond_t  *cond;
-} PacketQueue;
+typedef struct PacketListNode{
+    AVPacket* pkt;
+    PacketListNode* next;
+}PacketListNode;
 
-typedef struct Clock {
-    double pts;           /* clock base */
-    double pts_drift;     /* clock base minus time at which we updated the clock */
-    double last_updated;
-    double speed;
-    int serial;           /* clock is based on a packet with this serial */
-    int paused;
-    int *queue_serial;    /* pointer to the current packet queue serial, used for obsolete clock detection */
-} Clock;
+typedef struct PacketQueue{
+    PacketListNode* firstNode, *lastNode;
+    int size;    // current packet queue size
+    int maxsize; // maximum packet queue size
+    pthread_mutex_t* mtx;
+    pthread_cond_t*  cond;
+}PacketQueue;
 
-/* Common struct for handling all types of decoded data and allocated render buffers. */
-typedef struct Frame {
-    AVFrame *frame;
-    AVSubtitle sub;
-    AVSubtitleRect **subrects;  /* rescaled subtitle rectangles in yuva */
-    int serial;
-    double pts;           /* presentation timestamp for the frame */
-    double duration;      /* estimated duration of the frame */
-    int64_t pos;          /* byte position of the frame in the input file */
-    int allocated;
-    int reallocate;
-    int width;
-    int height;
-    AVRational sar;
-} Frame;
+typedef struct Frame{
+    AVFrame* frame;
+    double pts;
+}Frame;
 
-#define VIDEO_PICTURE_QUEUE_SIZE 3
-#define SUBPICTURE_QUEUE_SIZE 16
-#define SAMPLE_QUEUE_SIZE 9
-#define FRAME_QUEUE_SIZE FFMAX(SAMPLE_QUEUE_SIZE, FFMAX(VIDEO_PICTURE_QUEUE_SIZE, SUBPICTURE_QUEUE_SIZE))
+#define FRAME_QUEUE_SIZE 20
+typedef struct FrameQueue{
+    Frame fqueue[FRAME_QUEUE_SIZE];
+    int ridx;
+    int widx;
+    int size;  // frame queue size
+    pthread_mutex_t* mtx;
+    pthread_cond_t*  cond;
+}FrameQueue;
 
-typedef struct FrameQueue {
-    Frame queue[FRAME_QUEUE_SIZE];
-    int rindex;
-    int windex;
-    int size;
-    int max_size;
-    int keep_last;
-    int rindex_shown;
-    pthread_mutex_t *mutex;
-    pthread_cond_t  *cond;
-    PacketQueue     *pktq;
-} FrameQueue;
-
-typedef struct Decoder {
-    AVPacket pkt;
-    AVPacket pkt_temp;
-    PacketQueue *queue;
-    AVCodecContext *avctx;
-    int pkt_serial;
-    int finished;
-    int packet_pending;
-    pthread_cond_t *empty_queue_cond;
-    int64_t start_pts;
-    AVRational start_pts_tb;
-    int64_t next_pts;
-    AVRational next_pts_tb;
-} Decoder;
-
-
-typedef struct VideoState {
-    int seek_req;
-    int seek_flags;
-    int64_t seek_pos;
-    int64_t seek_rel;
-    int read_pause_return;
-    AVFormatContext *ic;
-    int realtime;
-
-    Clock audclk;
-    Clock vidclk;
-    Clock extclk;
-
-    FrameQueue pictq;
-    FrameQueue subpq;
-    FrameQueue sampq;
-
-    Decoder auddec;
-    Decoder viddec;
-    Decoder subdec;
-
-    int viddec_width;
-    int viddec_height;
-
-    int video_stream;
-    AVStream *video_st;
-    PacketQueue videoq;
-    double max_frame_duration;      // maximum duration of a frame - above this, we consider the jump a timestamp discontinuity
+typedef struct VideoPlayer{
+    AVCodecContext* avctx;
+    PacketQueue     videoq;  // video packet queue
+    FrameQueue      pictq;   // video decoded frame queue 
     struct SwsContext *img_convert_ctx;
     int eof;
-} VideoState;
+} VideoPlayer;
 
 namespace VideoAnalyzer {
 
-	using namespace System;
-	using namespace System::ComponentModel;
-	using namespace System::Collections;
-	using namespace System::Windows::Forms;
-	using namespace System::Data;
-	using namespace System::Drawing;
+    using namespace System;
+    using namespace System::ComponentModel;
+    using namespace System::Collections;
+    using namespace System::Windows::Forms;
+    using namespace System::Data;
+    using namespace System::Drawing;
     using namespace System::Drawing::Drawing2D;
     using namespace System::Drawing::Imaging;
     using namespace System::Threading;
-	/// <summary>
-	/// Summary for Form1
-	/// </summary>
-	public ref class Form1 : public System::Windows::Forms::Form
-	{
-	public:
+    /// <summary>
+    /// Summary for Form1
+    /// </summary>
+    public ref class Form1 : public System::Windows::Forms::Form
+    {
+    public:
         System::String^ mfilename;  // input filename
-		Form1(void);
+        Form1(void);
 
         Int32 PlayStat;
         static pthread_mutex_t* m_mtxPlayStat;
@@ -157,16 +84,16 @@ namespace VideoAnalyzer {
         Thread^ readThread;
         Thread^ decThread;
         Thread^ rendThread;
-        VideoState* m_vs;
+        VideoPlayer* m_pl;
 
         delegate void setVideoInfo(String^ str_res);
         setVideoInfo^ mSetVidInfDelegate;
 
-	protected:
-		/// <summary>
-		/// Clean up any resources being used.
-		/// </summary>
-		~Form1();
+    protected:
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        ~Form1();
 
     private: System::Windows::Forms::MenuStrip^  menuStrip1;
     protected: 
@@ -203,18 +130,18 @@ namespace VideoAnalyzer {
 
     private: System::ComponentModel::IContainer^  components;
 
-	private:
-		/// <summary>
-		/// Required designer variable.
-		/// </summary>
+    private:
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
 
 #pragma region Windows Form Designer generated code
-		/// <summary>
-		/// Required method for Designer support - do not modify
-		/// the contents of this method with the code editor.
-		/// </summary>
-		void InitializeComponent(void)
-		{
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        void InitializeComponent(void)
+        {
             System::ComponentModel::ComponentResourceManager^  resources = (gcnew System::ComponentModel::ComponentResourceManager(Form1::typeid));
             this->menuStrip1 = (gcnew System::Windows::Forms::MenuStrip());
             this->fileToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
@@ -449,17 +376,16 @@ namespace VideoAnalyzer {
             this->ControlPannel->ResumeLayout(false);
             this->ResumeLayout(false);
             this->PerformLayout();
-
         }
 #pragma endregion
-private: System::Void openToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e);
-private: System::Void VideoPlaybackPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
-private: System::Void VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
-private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
-private: System::Void showFrame(Graphics^ g, Int32 pannelWidth, Int32 pannelHeight, Bitmap^ pic);
-private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady);
-private: System::Void StopButton_Click(System::Object^  sender, System::EventArgs^  e);
-private: System::Void PlayButton_Click(System::Object^  sender, System::EventArgs^  e);
-};
+    private: System::Void openToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e);
+    private: System::Void VideoPlaybackPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
+    private: System::Void VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
+    private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
+    private: System::Void showFrame(Graphics^ g, Int32 pannelWidth, Int32 pannelHeight, Bitmap^ pic);
+    private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady);
+    private: System::Void StopButton_Click(System::Object^  sender, System::EventArgs^  e);
+    private: System::Void PlayButton_Click(System::Object^  sender, System::EventArgs^  e);
+    };
 }
 
