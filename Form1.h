@@ -35,6 +35,12 @@ typedef struct PacketQueue{
     pthread_cond_t*  cond;
 }PacketQueue;
 
+void packet_queue_init(PacketQueue* pq);
+void packet_queue_destory(PacketQueue* pq);
+void packet_queue_put(PacketQueue* pq, AVPacket* pkt);
+AVPacket* packet_queue_get(PacketQueue* pq);
+
+
 typedef struct Frame{
     AVFrame* frame;
     double pts;
@@ -49,6 +55,12 @@ typedef struct FrameQueue{
     pthread_mutex_t* mtx;
     pthread_cond_t*  cond;
 }FrameQueue;
+
+void picture_queue_init(FrameQueue* fq);
+void picture_queue_destory(FrameQueue* fq);
+Frame* picture_queue_get_write_picture(FrameQueue* fq);
+void picture_queue_write(FrameQueue* fq);
+Frame* picture_queue_read(FrameQueue* fq);
 
 typedef struct VideoPlayer{
     AVCodecContext* avctx;
@@ -85,6 +97,10 @@ namespace VideoAnalyzer {
         Thread^ decThread;
         Thread^ rendThread;
         VideoPlayer* m_pl;
+
+        AVCodecContext* m_avctx;
+        AVCodec* m_avcodec;
+        int video_stream_index;
 
         delegate void setVideoInfo(String^ str_res);
         setVideoInfo^ mSetVidInfDelegate;
@@ -388,4 +404,5 @@ namespace VideoAnalyzer {
     private: System::Void PlayButton_Click(System::Object^  sender, System::EventArgs^  e);
     };
 }
+
 

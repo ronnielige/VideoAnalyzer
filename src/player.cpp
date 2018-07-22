@@ -23,6 +23,14 @@ int stream_component_open(AVFormatContext *ic, AVCodecContext** avctx, AVCodec**
         return -1;
     *avctx = ic->streams[stream_index]->codec;
     *codec = avcodec_find_decoder((*avctx)->codec_id);
+    (*avctx)->codec_id = (*codec)->id;
+
+    switch((*avctx)->codec_type)
+    {
+    case AVMEDIA_TYPE_VIDEO:
+        //mForm->video_stream_index = stream_index;
+        break;
+    }
     return 0;
 }
 
@@ -72,15 +80,16 @@ System::Void readThreadProc(Object^ data)
 {
     Form1^ mainForm = (Form1^)data;
     char* fname = NULL;
-    int err;
-    AVFormatContext* ic;
-    AVCodecContext *avctx;
-    AVCodec* codec;
+    int err, ret;
+    AVFormatContext* ic = NULL;
+    AVCodecContext *avctx = mainForm->m_avctx;
+    AVCodec* codec = mainForm->m_avcodec;
+    AVPacket pkt1, *pkt = &pkt1;
+    int64_t stream_start_time;
+    int64_t pkt_ts;
+
     av_register_all();
     int i;
-    if(!ic)
-        return;
-
     while(1)
     {
         pthread_mutex_lock(mainForm->m_mtxPlayStat);
@@ -97,10 +106,14 @@ System::Void readThreadProc(Object^ data)
         {
             char* wanted_stream_spec[AVMEDIA_TYPE_NB] = {"v"};
             int st_index[AVMEDIA_TYPE_NB] = {-1, -1, -1, -1};
-            int video_st_index;
             AVCodecParameters *vcodecpar;
             String^ VidInfoStr;
+            if(ic)
+                avformat_close_input(&ic);
+
             ic = avformat_alloc_context();
+            if(!ic)
+                return;
             fname = (char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(mainForm->mfilename);
             err = avformat_open_input(&ic, fname, NULL, NULL);
             if(err < 0)
@@ -141,6 +154,7 @@ System::Void readThreadProc(Object^ data)
                 AVRational sar = av_guess_sample_aspect_ratio(ic, st, NULL);
                 VidInfoStr += L"\nResolution:\n   " + vcodecpar->width + " x " + vcodecpar->height + "\n"; 
                 stream_component_open(ic, &avctx, &codec, st_index[AVMEDIA_TYPE_VIDEO]);
+                mainForm->video_stream_index = st_index[AVMEDIA_TYPE_VIDEO];
                 VidInfoStr += L"\nVideo Codec:\n   " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)codec->long_name) + "\n"; 
 
                 dump_format(ic, st_index[AVMEDIA_TYPE_VIDEO], VidInfoStr);
@@ -158,8 +172,24 @@ System::Void readThreadProc(Object^ data)
 
         if(mainForm->PlayStat == PS_PLAY)
         {
+            ret = av_read_frame(ic, pkt);
+            if(ret < 0)
+            {
+                if((ret == AVERROR_EOF || avio_feof(ic->pb))) // reach end of file
+                {
+
+                }
+            }
+            stream_start_time = ic->streams[pkt->stream_index]->start_time;
+            pkt_ts = pkt->pts == AV_NOPTS_VALUE? pkt->dts: pkt->pts;
+            if(pkt->stream_index == AVMEDIA_TYPE_VIDEO)
+            {
+                packet_queue_put(&(mainForm->m_pl->videoq), pkt);
+            }
         }
     }
+    if(ic)
+        avformat_close_input(&ic);
 }
 
 System::Void decodeThreadProc(Object^ data)
