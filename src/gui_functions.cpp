@@ -4,6 +4,32 @@
 #include "player.h"
 using namespace VideoAnalyzer;
 
+void packet_queue_init(PacketQueue* pq)
+{
+    pq->size    = 0;
+    pq->maxsize = 30;
+    pq->firstNode = pq->lastNode = NULL;
+    pq->mtx  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+    pq->cond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
+    pthread_mutex_init(pq->mtx, NULL);
+    pthread_cond_init(pq->cond, NULL);
+}
+
+void packet_queue_destory(PacketQueue* pq)
+{
+    PacketListNode* nd = pq->firstNode;
+    while(nd)
+    {
+        pq->firstNode = pq->firstNode->next; // move to next
+        free(nd);
+        nd = pq->firstNode;
+    }
+    pthread_mutex_destroy(pq->mtx);
+    pthread_cond_destroy(pq->cond);
+    free(pq->mtx);
+    free(pq->cond);
+}
+
 void packet_queue_put(PacketQueue* pq, AVPacket* pkt)
 {
     pthread_mutex_lock(pq->mtx);
@@ -48,6 +74,55 @@ AVPacket* packet_queue_get(PacketQueue* pq)
     return rpkt;
 }
 
+void picture_queue_init(FrameQueue* fq)
+{
+    fq->size = fq->ridx = fq->widx = 0;
+    fq->mtx  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+    fq->cond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
+    pthread_mutex_init(fq->mtx, NULL);
+    pthread_cond_init(fq->cond, NULL);
+}
+
+void picture_queue_destory(FrameQueue* fq)
+{
+    pthread_mutex_destroy(fq->mtx);
+    pthread_cond_destroy(fq->cond);
+    free(fq->mtx);
+    free(fq->cond);
+}
+
+Frame* picture_queue_get_write_picture(FrameQueue* fq)
+{
+    pthread_mutex_lock(fq->mtx);
+    while(fq->size >= FRAME_QUEUE_SIZE)  // frame queue full
+        pthread_cond_wait(fq->cond, fq->mtx);
+    pthread_mutex_unlock(fq->mtx);
+    return &(fq->fqueue[fq->widx]);
+}
+
+void picture_queue_write(FrameQueue* fq)
+{
+    pthread_mutex_lock(fq->mtx);
+    fq->widx = ((fq->widx + 1) == FRAME_QUEUE_SIZE)? 0: fq->widx + 1; // update write index
+    fq->size++;
+    pthread_cond_signal(fq->cond);
+    pthread_mutex_unlock(fq->mtx);
+}
+
+Frame* picture_queue_read(FrameQueue* fq)
+{
+    Frame* rf;
+    pthread_mutex_lock(fq->mtx);
+    while(fq->size == 0)
+        pthread_cond_wait(fq->cond, fq->mtx);  // frame queue empty
+    rf = &(fq->fqueue[fq->ridx]);
+    fq->size--;
+    fq->ridx = ((fq->ridx + 1) == FRAME_QUEUE_SIZE)? 0: fq->ridx + 1; //
+    pthread_cond_signal(fq->cond);
+    pthread_mutex_unlock(fq->mtx);
+    return rf;
+}
+
 Form1::Form1(void)
 {
     InitializeComponent();
@@ -58,20 +133,8 @@ Form1::Form1(void)
     pthread_cond_init(m_condPlayCond, NULL);
 
     m_pl = (VideoPlayer*)malloc(sizeof(VideoPlayer));
-    m_pl->videoq.size    = 0;
-    m_pl->videoq.maxsize = 30;
-    m_pl->videoq.firstNode = m_pl->videoq.lastNode = NULL;
-    m_pl->videoq.mtx  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
-    m_pl->videoq.cond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
-    pthread_mutex_init(m_pl->videoq.mtx, NULL);
-    pthread_cond_init(m_pl->videoq.cond, NULL);
-
-    m_pl->pictq.size = m_pl->pictq.ridx = m_pl->pictq.widx = 0;
-    m_pl->pictq.mtx  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
-    m_pl->pictq.cond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
-    pthread_mutex_init(m_pl->pictq.mtx, NULL);
-    pthread_cond_init(m_pl->pictq.cond, NULL);
-
+    packet_queue_init(&(m_pl->videoq));
+    picture_queue_init(&(m_pl->pictq));
     readThread = gcnew Thread(gcnew ParameterizedThreadStart(&readThreadProc));
     readThread->Start(this);
 
@@ -90,27 +153,13 @@ Form1::~Form1()
     PlayStat = PS_EXIT;
     pthread_cond_broadcast(m_condPlayCond);  // send exit to threads
     pthread_mutex_unlock(m_mtxPlayStat);
+
     readThread->Join();   // wait read   thread to finish
     decThread->Join();    // wait decode thread to finish
     rendThread->Join();   // wait render thread to finish
 
-    PacketListNode* nd = m_pl->videoq.firstNode;
-    while(nd)
-    {
-        m_pl->videoq.firstNode = m_pl->videoq.firstNode->next; // move to next
-        free(nd);
-        nd = m_pl->videoq.firstNode;
-    }
-
-    pthread_mutex_destroy(m_pl->videoq.mtx);
-    pthread_cond_destroy(m_pl->videoq.cond);
-    free(m_pl->videoq.mtx);
-    free(m_pl->videoq.cond);
-
-    pthread_mutex_destroy(m_pl->pictq.mtx);
-    pthread_cond_destroy(m_pl->pictq.cond);
-    free(m_pl->pictq.mtx);
-    free(m_pl->pictq.cond);
+    packet_queue_destory(&(m_pl->videoq));
+    picture_queue_destory(&(m_pl->pictq));
     free(m_pl);
 
     pthread_mutex_destroy(m_mtxPlayStat);
@@ -118,7 +167,6 @@ Form1::~Form1()
     free(m_mtxPlayStat);
     free(m_condPlayCond);
     
-
     if (components)
     {
         delete components;
