@@ -104,7 +104,7 @@ System::Void readThreadProc(Object^ data)
 
         if(mainForm->PlayStat == PS_INIT) // init
         {
-            char* wanted_stream_spec[AVMEDIA_TYPE_NB] = {"v"};
+            char* wanted_stream_spec[AVMEDIA_TYPE_NB] = {0};
             int st_index[AVMEDIA_TYPE_NB] = {-1, -1, -1, -1};
             AVCodecParameters *vcodecpar;
             String^ VidInfoStr;
@@ -131,23 +131,8 @@ System::Void readThreadProc(Object^ data)
             }
             VidInfoStr = L"\nFile:\n   " + mainForm->mfilename + "\n";
             VidInfoStr += L"\nFile Format:\n   " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)ic->iformat->long_name) + "\n";
-
-            for( i = 0; i < ic->nb_streams; i++)
-            {
-                AVStream* st = ic->streams[i];
-                enum AVMediaType type = st->codecpar->codec_type;
-                st->discard = AVDISCARD_ALL;
-                if (wanted_stream_spec[type] && st_index[type] == -1)
-                    if (avformat_match_stream_specifier(ic, st, wanted_stream_spec[type]) > 0)
-                        st_index[type] = i;
-            }
-            for (i = 0; i < AVMEDIA_TYPE_NB; i++) {
-                if (wanted_stream_spec[i] && st_index[i] == -1) {
-                    av_log(NULL, AV_LOG_ERROR, "Stream specifier %s does not match any %s stream\n", wanted_stream_spec[i], av_get_media_type_string((enum AVMediaType)i));
-                    st_index[i] = INT_MAX;
-                }
-            }
             st_index[AVMEDIA_TYPE_VIDEO] = av_find_best_stream(ic, AVMEDIA_TYPE_VIDEO, st_index[AVMEDIA_TYPE_VIDEO], -1, NULL, 0);
+
             if(st_index[AVMEDIA_TYPE_VIDEO] >= 0) {
                 AVStream *st = ic->streams[st_index[AVMEDIA_TYPE_VIDEO]];
                 vcodecpar = st->codecpar;
@@ -172,12 +157,14 @@ System::Void readThreadProc(Object^ data)
 
         if(mainForm->PlayStat == PS_PLAY)
         {
+            av_init_packet(pkt);
+            pkt->data = NULL;
+            pkt->size = 0;
             ret = av_read_frame(ic, pkt);
             if(ret < 0)
             {
                 if((ret == AVERROR_EOF || avio_feof(ic->pb))) // reach end of file
                 {
-
                 }
             }
             stream_start_time = ic->streams[pkt->stream_index]->start_time;
