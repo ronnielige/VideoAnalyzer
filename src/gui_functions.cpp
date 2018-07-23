@@ -74,17 +74,31 @@ AVPacket* packet_queue_get(PacketQueue* pq)
     return rpkt;
 }
 
-void picture_queue_init(FrameQueue* fq)
+int picture_queue_init(FrameQueue* fq)
 {
     fq->size = fq->ridx = fq->widx = 0;
+    fq->max_size = FRAME_QUEUE_SIZE;
     fq->mtx  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
     fq->cond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
+    for(int i = 0; i < fq->max_size; i++)
+    {
+        fq->fqueue->frame = av_frame_alloc();
+        if(fq->fqueue->frame == NULL)
+            return AVERROR(ENOMEM);
+    }
     pthread_mutex_init(fq->mtx, NULL);
     pthread_cond_init(fq->cond, NULL);
+    return 0;
 }
 
 void picture_queue_destory(FrameQueue* fq)
 {
+    for(int i = 0; i < fq->max_size; i++)
+    {
+        Frame* vp = &fq->fqueue[i];
+        av_frame_unref(vp->frame);
+        av_frame_free(&vp->frame);
+    }
     pthread_mutex_destroy(fq->mtx);
     pthread_cond_destroy(fq->cond);
     free(fq->mtx);

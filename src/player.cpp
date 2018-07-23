@@ -25,6 +25,9 @@ int stream_component_open(AVFormatContext *ic, AVCodecContext** avctx, AVCodec**
     *codec = avcodec_find_decoder((*avctx)->codec_id);
     (*avctx)->codec_id = (*codec)->id;
 
+    if(avcodec_open2(*avctx, *codec, NULL) < 0)
+        return -1; 
+
     switch((*avctx)->codec_type)
     {
     case AVMEDIA_TYPE_VIDEO:
@@ -82,14 +85,13 @@ System::Void readThreadProc(Object^ data)
     char* fname = NULL;
     int err, ret;
     AVFormatContext* ic = NULL;
-    AVCodecContext *avctx = mainForm->m_avctx;
-    AVCodec* codec = mainForm->m_avcodec;
+    AVCodecContext *avctx;// = mainForm->m_avctx;
+    AVCodec* codec;// = mainForm->m_avcodec;
     AVPacket pkt1, *pkt = &pkt1;
     int64_t stream_start_time;
     int64_t pkt_ts;
 
     av_register_all();
-    int i;
     while(1)
     {
         pthread_mutex_lock(mainForm->m_mtxPlayStat);
@@ -149,6 +151,9 @@ System::Void readThreadProc(Object^ data)
 
             mainForm->Invoke(mainForm->mSetVidInfDelegate, VidInfoStr);
 
+            mainForm->m_avcodec = codec;
+            mainForm->m_avctx   = avctx;
+
             pthread_mutex_lock(mainForm->m_mtxPlayStat);
             mainForm->PlayStat = PS_NONE;  // Finished Init, then just to wait
             pthread_cond_broadcast(mainForm->m_condPlayCond); 
@@ -182,6 +187,11 @@ System::Void readThreadProc(Object^ data)
 System::Void decodeThreadProc(Object^ data)
 {
     Form1^ mainForm = (Form1^)data;
+    AVPacket* pkt;
+    Frame* myframe;
+    int got_frame, ret = 0;
+    PacketQueue* pq = &(mainForm->m_pl->videoq);
+    FrameQueue*  fq = &(mainForm->m_pl->pictq);
     while(1)
     {
         pthread_mutex_lock(mainForm->m_mtxPlayStat);
@@ -193,6 +203,26 @@ System::Void decodeThreadProc(Object^ data)
         while(mainForm->PlayStat != PS_PLAY && mainForm->PlayStat != PS_EXIT) // wait until start play
             pthread_cond_wait(mainForm->m_condPlayCond, mainForm->m_mtxPlayStat);
         pthread_mutex_unlock(mainForm->m_mtxPlayStat);
+
+        if(mainForm->PlayStat == PS_PLAY)
+        {
+            pkt = packet_queue_get(pq);
+            myframe = picture_queue_get_write_picture(fq);
+            do{
+                got_frame = 0;
+                ret = avcodec_decode_video2(mainForm->m_avctx, myframe->frame, &got_frame, pkt);
+                if(ret < 0)
+                    break;
+                pkt->data += pkt->size;
+                pkt->size -= pkt->size;
+            }while(pkt->size > 0);
+
+            if(got_frame)
+            {
+                picture_queue_write(fq);
+            }
+
+        }
     }
 }
 

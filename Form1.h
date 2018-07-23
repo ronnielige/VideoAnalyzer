@@ -52,11 +52,12 @@ typedef struct FrameQueue{
     int ridx;
     int widx;
     int size;  // frame queue size
+    int max_size;
     pthread_mutex_t* mtx;
     pthread_cond_t*  cond;
 }FrameQueue;
 
-void picture_queue_init(FrameQueue* fq);
+int  picture_queue_init(FrameQueue* fq);
 void picture_queue_destory(FrameQueue* fq);
 Frame* picture_queue_get_write_picture(FrameQueue* fq);
 void picture_queue_write(FrameQueue* fq);
