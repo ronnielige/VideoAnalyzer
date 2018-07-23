@@ -187,7 +187,7 @@ System::Void readThreadProc(Object^ data)
 System::Void decodeThreadProc(Object^ data)
 {
     Form1^ mainForm = (Form1^)data;
-    AVPacket* pkt;
+    AVPacket pkt1, *pkt = &pkt1;
     Frame* myframe;
     int got_frame, ret = 0;
     PacketQueue* pq = &(mainForm->m_pl->videoq);
@@ -206,7 +206,7 @@ System::Void decodeThreadProc(Object^ data)
 
         if(mainForm->PlayStat == PS_PLAY)
         {
-            pkt = packet_queue_get(pq);
+            packet_queue_get(pq, pkt);
             myframe = picture_queue_get_write_picture(fq);
             do{
                 got_frame = 0;
@@ -216,6 +216,7 @@ System::Void decodeThreadProc(Object^ data)
                 pkt->data += pkt->size;
                 pkt->size -= pkt->size;
             }while(pkt->size > 0);
+            av_packet_unref(pkt);
 
             if(got_frame)
             {

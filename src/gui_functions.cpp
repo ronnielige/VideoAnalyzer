@@ -36,7 +36,7 @@ void packet_queue_put(PacketQueue* pq, AVPacket* pkt)
     if(pq->firstNode == NULL) // queue empty
     {
         pq->firstNode = (PacketListNode *)malloc(sizeof(PacketListNode));
-        pq->firstNode->pkt  = pkt;
+        pq->firstNode->pkt  = *pkt;
         pq->firstNode->next = NULL;
         pq->lastNode = pq->firstNode;
         pq->size++;
@@ -47,7 +47,7 @@ void packet_queue_put(PacketQueue* pq, AVPacket* pkt)
             pthread_cond_wait(pq->cond, pq->mtx);
 
         PacketListNode* nnode = (PacketListNode *)malloc(sizeof(PacketListNode));
-        nnode->pkt  = pkt;
+        nnode->pkt  = *pkt;
         nnode->next = NULL;
         pq->lastNode->next = nnode;
         pq->lastNode = pq->lastNode->next;
@@ -57,21 +57,19 @@ void packet_queue_put(PacketQueue* pq, AVPacket* pkt)
     pthread_mutex_unlock(pq->mtx);
 }
 
-AVPacket* packet_queue_get(PacketQueue* pq)
+void packet_queue_get(PacketQueue* pq, AVPacket *rpkt)
 {
-    AVPacket* rpkt;
     PacketListNode* hdNode;
     pthread_mutex_lock(pq->mtx);
     while(pq->size == 0 || pq->firstNode == NULL) // packet queue empty, wait
         pthread_cond_wait(pq->cond, pq->mtx);
     hdNode = pq->firstNode;
-    rpkt = pq->firstNode->pkt;
+    *rpkt = pq->firstNode->pkt;
     pq->firstNode = pq->firstNode->next;
     free(hdNode);
     pq->size--;
     pthread_cond_signal(pq->cond); // inform 
     pthread_mutex_unlock(pq->mtx);
-    return rpkt;
 }
 
 int picture_queue_init(FrameQueue* fq)

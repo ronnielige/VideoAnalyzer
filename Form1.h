@@ -23,7 +23,7 @@ extern "C"
 };
 
 typedef struct PacketListNode{
-    AVPacket* pkt;
+    AVPacket pkt;
     PacketListNode* next;
 }PacketListNode;
 
@@ -38,7 +38,7 @@ typedef struct PacketQueue{
 void packet_queue_init(PacketQueue* pq);
 void packet_queue_destory(PacketQueue* pq);
 void packet_queue_put(PacketQueue* pq, AVPacket* pkt);
-AVPacket* packet_queue_get(PacketQueue* pq);
+void packet_queue_get(PacketQueue* pq, AVPacket *rpkt);
 
 
 typedef struct Frame{
