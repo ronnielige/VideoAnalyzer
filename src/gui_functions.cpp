@@ -139,7 +139,7 @@ Form1::Form1(void)
 {
     InitializeComponent();
     PlayStat = PS_NONE;    // init Player Stat 
-    m_mtxPlayStat = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+    m_mtxPlayStat  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
     m_condPlayCond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
     pthread_mutex_init(m_mtxPlayStat, NULL);
     pthread_cond_init(m_condPlayCond, NULL);
@@ -153,8 +153,8 @@ Form1::Form1(void)
     decThread = gcnew Thread(gcnew ParameterizedThreadStart(&decodeThreadProc));
     decThread->Start(this);
 
-    rendThread = gcnew Thread(gcnew ParameterizedThreadStart(&renderThreadProc));
-    rendThread->Start(this);
+    //rendThread = gcnew Thread(gcnew ParameterizedThreadStart(&renderThreadProc));
+    //rendThread->Start(this);
 
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
 }
@@ -296,8 +296,10 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
     pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
     pthread_mutex_unlock(m_mtxPlayStat);
 
-    //Graphics^ g = VideoPlaybackPannel->CreateGraphics();
-    //g->Clear(Color::White);
+    Frame* renderFrame = picture_queue_read(&(m_pl->pictq));
+
+    Graphics^ g = VideoPlaybackPannel->CreateGraphics();
+    g->Clear(Color::White);
     //Bitmap^ pic = gcnew Bitmap(mfilename);
     //Int32 picWidth = pic->Width, picHeight = pic->Height;
     //char res[20]; 

@@ -230,6 +230,8 @@ System::Void decodeThreadProc(Object^ data)
 System::Void renderThreadProc(Object^ data)
 {
     Form1^ mainForm = (Form1^)data;
+    FrameQueue*  fq = &(mainForm->m_pl->pictq);
+    Frame* pfrm;
     while(1)
     {
         pthread_mutex_lock(mainForm->m_mtxPlayStat);
@@ -241,5 +243,10 @@ System::Void renderThreadProc(Object^ data)
         while(mainForm->PlayStat != PS_PLAY && mainForm->PlayStat != PS_EXIT) // wait until start play
             pthread_cond_wait(mainForm->m_condPlayCond, mainForm->m_mtxPlayStat);
         pthread_mutex_unlock(mainForm->m_mtxPlayStat);
+
+        if(mainForm->PlayStat == PS_PLAY)
+        {
+            pfrm = picture_queue_read(fq);
+        }
     }
 }
