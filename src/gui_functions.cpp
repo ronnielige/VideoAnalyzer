@@ -80,8 +80,8 @@ int picture_queue_init(FrameQueue* fq)
     fq->cond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
     for(int i = 0; i < fq->max_size; i++)
     {
-        fq->fqueue->frame = av_frame_alloc();
-        if(fq->fqueue->frame == NULL)
+        fq->fqueue[i].frame = av_frame_alloc();
+        if(fq->fqueue[i].frame == NULL)
             return AVERROR(ENOMEM);
     }
     pthread_mutex_init(fq->mtx, NULL);
