@@ -43,7 +43,8 @@ void packet_queue_get(PacketQueue* pq, AVPacket *rpkt);
 void packet_queue_abort(PacketQueue* pq);
 
 typedef struct Frame{
-    AVFrame* frame;
+    AVFrame* yuvframe;
+    AVFrame* rgbframe;
     double pts;
 }Frame;
 
@@ -60,6 +61,7 @@ typedef struct FrameQueue{
 }FrameQueue;
 
 int    picture_queue_init(FrameQueue* fq);
+int    picture_queue_alloc_rgbframe(FrameQueue* fq, int width, int height);
 void   picture_queue_destory(FrameQueue* fq);
 Frame* picture_queue_get_write_picture(FrameQueue* fq);
 void   picture_queue_write(FrameQueue* fq);
@@ -70,7 +72,7 @@ typedef struct VideoPlayer{
     AVCodecContext* avctx;
     PacketQueue     videoq;  // video packet queue
     FrameQueue      pictq;   // video decoded frame queue 
-    struct SwsContext *img_convert_ctx;
+    struct SwsContext *sws_ctx;
     int             frameInterval; // time interval between two frames
     int             width;
     int             height;

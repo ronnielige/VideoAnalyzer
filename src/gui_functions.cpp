@@ -90,12 +90,34 @@ int picture_queue_init(FrameQueue* fq)
     fq->cond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
     for(int i = 0; i < fq->max_size; i++)
     {
-        fq->fqueue[i].frame = av_frame_alloc();
-        if(fq->fqueue[i].frame == NULL)
+        fq->fqueue[i].yuvframe = av_frame_alloc();
+        fq->fqueue[i].rgbframe = NULL;
+        if(fq->fqueue[i].yuvframe == NULL)
             return AVERROR(ENOMEM);
     }
     pthread_mutex_init(fq->mtx, NULL);
     pthread_cond_init(fq->cond, NULL);
+    return 0;
+}
+
+int picture_queue_alloc_rgbframe(FrameQueue* fq, int width, int height)
+{
+    int ret;
+    for(int i = 0; i < fq->max_size; i++)
+    {
+        av_frame_free(&(fq->fqueue[i].rgbframe)); // first free, then alloc
+
+        fq->fqueue[i].rgbframe = av_frame_alloc();
+        if(fq->fqueue[i].rgbframe == NULL)
+            return AVERROR(ENOMEM);
+        fq->fqueue[i].rgbframe->format = AV_PIX_FMT_BGR24;
+        fq->fqueue[i].rgbframe->width  = width;
+        fq->fqueue[i].rgbframe->height = height;
+
+        ret = av_frame_get_buffer(fq->fqueue->rgbframe, 32);
+        if(ret < 0)
+            return -1;
+    }
     return 0;
 }
 
@@ -104,8 +126,10 @@ void picture_queue_destory(FrameQueue* fq)
     for(int i = 0; i < fq->max_size; i++)
     {
         Frame* vp = &fq->fqueue[i];
-        av_frame_unref(vp->frame);
-        av_frame_free(&vp->frame);
+        //av_frame_unref(vp->yuvframe);
+        //av_frame_unref(vp->rgbframe);
+        av_frame_free(&vp->yuvframe);
+        av_frame_free(&vp->rgbframe);
     }
     pthread_mutex_destroy(fq->mtx);
     pthread_cond_destroy(fq->cond);
@@ -161,6 +185,7 @@ void Form1::PlayerInit()
     m_pl->frameInterval = 40; // default assume video fps = 25, then frame interval = 40 ms
     m_pl->width = 1280;
     m_pl->height = 720;
+    m_pl->sws_ctx = NULL;
     packet_queue_init(&(m_pl->videoq));
     picture_queue_init(&(m_pl->pictq));
     readThread = gcnew Thread(gcnew ParameterizedThreadStart(&readThreadProc));
@@ -177,6 +202,8 @@ void Form1::PlayerExit()
 {
     packet_queue_abort(&(m_pl->videoq));
     picture_queue_abort(&(m_pl->pictq));
+    if(m_pl->sws_ctx)
+        sws_freeContext(m_pl->sws_ctx);
 }
 
 Form1::Form1(void)
@@ -328,8 +355,8 @@ System::Void Form1::StopButton_Click(System::Object^  sender, System::EventArgs^
 System::Void Form1::RenderFrame(void)
 {
     Frame* renderFrame  = picture_queue_read(&(m_pl->pictq));
-    int      picWidth   = renderFrame->frame->width;
-    int     picHeight   = renderFrame->frame->height;
+    int      picWidth   = renderFrame->yuvframe->width;
+    int     picHeight   = renderFrame->yuvframe->height;
     Drawing::Rectangle rect = Drawing::Rectangle(0, 0, picWidth, picHeight);
 
     BitmapData^ bmpData = m_rpic->LockBits(rect, ImageLockMode::ReadWrite, m_rpic->PixelFormat);
@@ -339,9 +366,9 @@ System::Void Form1::RenderFrame(void)
     char* p = (char *)bmpDataPtr.ToPointer();
     for(int cnt = 0; cnt < bytes; cnt += 3)
     {
-        p[cnt] += 10;      // blue
-        p[cnt + 1] += 10;    // green
-        p[cnt + 2] += 10; // red
+        p[cnt]     = renderFrame->rgbframe->data[0][cnt];      // blue
+        p[cnt + 1] = renderFrame->rgbframe->data[0][cnt + 1];
+        p[cnt + 2] = renderFrame->rgbframe->data[0][cnt + 2];
     }
 
     m_rpic->UnlockBits(bmpData);
@@ -355,6 +382,9 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
 
     //m_rpic->Dispose();
     m_rpic = gcnew Bitmap(m_pl->width, m_pl->height, PixelFormat::Format24bppRgb);
+    m_pl->sws_ctx = sws_getContext(m_pl->width, m_pl->height, AV_PIX_FMT_YUV420P,
+                                   m_pl->width, m_pl->height, AV_PIX_FMT_BGR24, 
+                                   SWS_BICUBIC, NULL, NULL, NULL);
 
     pthread_mutex_lock(m_mtxPlayStat);
     PlayStat = PS_PLAY;

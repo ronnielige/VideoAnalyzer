@@ -158,6 +158,8 @@ System::Void readThreadProc(Object^ data)
             mainForm->m_avcodec = codec;
             mainForm->m_avctx   = avctx;
 
+            picture_queue_alloc_rgbframe(&(mainForm->m_pl->pictq), vcodecpar->width, vcodecpar->height);
+
             pthread_mutex_lock(mainForm->m_mtxPlayStat);
             mainForm->PlayStat = PS_NONE;  // Finished Init, then just to wait
             pthread_cond_broadcast(mainForm->m_condPlayCond); 
@@ -216,19 +218,23 @@ System::Void decodeThreadProc(Object^ data)
             {
                 do{
                     got_frame = 0;
-                    ret = avcodec_decode_video2(mainForm->m_avctx, myframe->frame, &got_frame, pkt);
+                    ret = avcodec_decode_video2(mainForm->m_avctx, myframe->yuvframe, &got_frame, pkt);
                     if(ret < 0)
                         break;
                     pkt->data += pkt->size;
                     pkt->size -= pkt->size;
                 }while(pkt->size > 0);
+
+                if(got_frame)
+                {
+                    sws_scale(mainForm->m_pl->sws_ctx, 
+                              myframe->yuvframe->data, myframe->yuvframe->linesize, 0, myframe->yuvframe->height, 
+                              myframe->rgbframe->data, myframe->rgbframe->linesize);
+                    picture_queue_write(fq);
+                }
             }
             av_packet_unref(pkt);
 
-            if(got_frame)
-            {
-                picture_queue_write(fq);
-            }
         }
     }
 }
