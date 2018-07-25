@@ -188,6 +188,7 @@ Form1::Form1(void)
     pthread_mutex_init(m_mtxPlayStat, NULL);
     pthread_cond_init(m_condPlayCond, NULL);
 
+    videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
     PlayerInit();
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
 }
@@ -200,6 +201,7 @@ Form1::~Form1()
     pthread_mutex_unlock(m_mtxPlayStat);
 
     PlayerExit();
+    delete videoPlayGraphic;
 
     readThread->Join();   // wait read   thread to finish
     decThread->Join();    // wait decode thread to finish
@@ -223,6 +225,9 @@ Form1::~Form1()
 
 System::Void Form1::VideoPlaybackPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
 {
+    delete videoPlayGraphic;
+    videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
+    videoPlayGraphic->Clear(Color::White);
 }
 
 System::Void Form1::VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
@@ -317,14 +322,11 @@ System::Void Form1::StopButton_Click(System::Object^  sender, System::EventArgs^
     pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
     pthread_mutex_unlock(m_mtxPlayStat);
 
-    Graphics^ g = VideoPlaybackPannel->CreateGraphics();
-    g->Clear(Color::White);
-    delete g;
+    //videoPlayGraphic->Clear(Color::White);
 }
 
 System::Void Form1::RenderFrame(void)
 {
-    Graphics^         g = VideoPlaybackPannel->CreateGraphics();
     Frame* renderFrame  = picture_queue_read(&(m_pl->pictq));
     int      picWidth   = renderFrame->frame->width;
     int     picHeight   = renderFrame->frame->height;
@@ -343,8 +345,7 @@ System::Void Form1::RenderFrame(void)
     }
 
     m_rpic->UnlockBits(bmpData);
-    showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, m_rpic);
-    delete g;
+    showFrame(videoPlayGraphic, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, m_rpic);
 }
 
 System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^  e) 
@@ -359,45 +360,4 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
     PlayStat = PS_PLAY;
     pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
     pthread_mutex_unlock(m_mtxPlayStat);
-
-    //Graphics^ g = VideoPlaybackPannel->CreateGraphics();
-    //g->Clear(Color::White);
-    //Bitmap^ pic = gcnew Bitmap(mfilename);
-    //Int32 picWidth = pic->Width, picHeight = pic->Height;
-    //char res[20]; 
-    //sprintf(res, "%d x %d", picWidth, picHeight);
-    //VideoInfoLabel->Text += "\nResolution:\n    " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)res);
-    ////Bitmap^ newpic = gcnew Bitmap(picWidth, picHeight, PixelFormat::Format24bppRgb);
-    //System::Drawing::Rectangle rect = System::Drawing::Rectangle(0, 0, picWidth, picHeight);
-    //Bitmap^ newpic = pic->Clone(rect, PixelFormat::Format24bppRgb);
-    //BitmapData^ bmpData = newpic->LockBits(rect, ImageLockMode::ReadWrite, newpic->PixelFormat);
-    //IntPtr ptr = bmpData->Scan0;
-    //Int32 cnt;
-    //int bytes = Math::Abs(bmpData->Stride) * newpic->Height;
-    //if(0 /* Method 1: */)
-    //{
-    //    array<Byte>^ rgbValues = gcnew array<Byte>(bytes);
-    //    for(cnt = 0; cnt < rgbValues->Length; cnt += 3)
-    //    {
-    //        rgbValues[cnt] = 87;
-    //        rgbValues[cnt + 1] = 055;
-    //        rgbValues[cnt + 2] = 253;
-    //    }
-    //    System::Runtime::InteropServices::Marshal::Copy(rgbValues, 0, ptr, bytes);
-    //}
-
-    //if(1 /* Method 2: directly operate bmpData */)
-    //{
-    //    char* p = (char *)ptr.ToPointer();
-    //    for(cnt = 0; cnt < bytes; cnt += 3)
-    //    {
-    //        //p[cnt] += 40;      // blue
-    //        //p[cnt + 1] = 9;  // green
-    //        //p[cnt + 2] += 255; // red
-    //    }
-    //}
-    //newpic->UnlockBits(bmpData);
-    //showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, newpic);
-
-    //delete g;
 }

@@ -109,6 +109,8 @@ namespace VideoAnalyzer {
         AVCodec* m_avcodec;
         int video_stream_index;
 
+        Graphics^ videoPlayGraphic;
+
         delegate void setVideoInfo(String^ str_res);
         setVideoInfo^ mSetVidInfDelegate;
 
