@@ -114,7 +114,7 @@ int picture_queue_alloc_rgbframe(FrameQueue* fq, int width, int height)
         fq->fqueue[i].rgbframe->width  = width;
         fq->fqueue[i].rgbframe->height = height;
 
-        ret = av_frame_get_buffer(fq->fqueue->rgbframe, 32);
+        ret = av_frame_get_buffer(fq->fqueue[i].rgbframe, 32);
         if(ret < 0)
             return -1;
     }
@@ -364,12 +364,7 @@ System::Void Form1::RenderFrame(void)
     int           bytes = Math::Abs(bmpData->Stride) * m_rpic->Height;
 
     char* p = (char *)bmpDataPtr.ToPointer();
-    for(int cnt = 0; cnt < bytes; cnt += 3)
-    {
-        p[cnt]     = renderFrame->rgbframe->data[0][cnt];      // blue
-        p[cnt + 1] = renderFrame->rgbframe->data[0][cnt + 1];
-        p[cnt + 2] = renderFrame->rgbframe->data[0][cnt + 2];
-    }
+    memcpy(p, renderFrame->rgbframe->data[0], bytes * sizeof(char));
 
     m_rpic->UnlockBits(bmpData);
     showFrame(videoPlayGraphic, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, m_rpic);
