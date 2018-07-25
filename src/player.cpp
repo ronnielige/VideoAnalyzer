@@ -209,20 +209,22 @@ System::Void decodeThreadProc(Object^ data)
             packet_queue_get(pq, pkt);
             myframe = picture_queue_get_write_picture(fq);
             do{
-                got_frame = 0;
-                ret = avcodec_decode_video2(mainForm->m_avctx, myframe->frame, &got_frame, pkt);
-                if(ret < 0)
-                    break;
-                pkt->data += pkt->size;
-                pkt->size -= pkt->size;
-            }while(pkt->size > 0);
+                if(myframe)
+                {
+                    got_frame = 0;
+                    ret = avcodec_decode_video2(mainForm->m_avctx, myframe->frame, &got_frame, pkt);
+                    if(ret < 0)
+                        break;
+                    pkt->data += pkt->size;
+                    pkt->size -= pkt->size;
+                }
+            }while(myframe && pkt->size > 0);
             av_packet_unref(pkt);
 
             if(got_frame)
             {
                 picture_queue_write(fq);
             }
-
         }
     }
 }

@@ -31,6 +31,7 @@ typedef struct PacketQueue{
     PacketListNode* firstNode, *lastNode;
     int size;    // current packet queue size
     int maxsize; // maximum packet queue size
+    int abort;
     pthread_mutex_t* mtx;
     pthread_cond_t*  cond;
 }PacketQueue;
@@ -39,7 +40,7 @@ void packet_queue_init(PacketQueue* pq);
 void packet_queue_destory(PacketQueue* pq);
 void packet_queue_put(PacketQueue* pq, AVPacket* pkt);
 void packet_queue_get(PacketQueue* pq, AVPacket *rpkt);
-
+void packet_queue_abort(PacketQueue* pq);
 
 typedef struct Frame{
     AVFrame* frame;
@@ -53,15 +54,17 @@ typedef struct FrameQueue{
     int widx;
     int size;  // frame queue size
     int max_size;
+    int abort;
     pthread_mutex_t* mtx;
     pthread_cond_t*  cond;
 }FrameQueue;
 
-int  picture_queue_init(FrameQueue* fq);
-void picture_queue_destory(FrameQueue* fq);
+int    picture_queue_init(FrameQueue* fq);
+void   picture_queue_destory(FrameQueue* fq);
 Frame* picture_queue_get_write_picture(FrameQueue* fq);
-void picture_queue_write(FrameQueue* fq);
+void   picture_queue_write(FrameQueue* fq);
 Frame* picture_queue_read(FrameQueue* fq);
+void   picture_queue_abort(FrameQueue* fq);
 
 typedef struct VideoPlayer{
     AVCodecContext* avctx;
@@ -72,7 +75,6 @@ typedef struct VideoPlayer{
 } VideoPlayer;
 
 namespace VideoAnalyzer {
-
     using namespace System;
     using namespace System::ComponentModel;
     using namespace System::Collections;
@@ -90,7 +92,8 @@ namespace VideoAnalyzer {
     public:
         System::String^ mfilename;  // input filename
         Form1(void);
-
+        void PlayerInit();
+        void PlayerExit();
         Int32 PlayStat;
         static pthread_mutex_t* m_mtxPlayStat;
         static pthread_cond_t*  m_condPlayCond;
@@ -401,6 +404,7 @@ namespace VideoAnalyzer {
     private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
     private: System::Void showFrame(Graphics^ g, Int32 pannelWidth, Int32 pannelHeight, Bitmap^ pic);
     private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady);
+    private: System::Void RenderFrame(void);
     private: System::Void StopButton_Click(System::Object^  sender, System::EventArgs^  e);
     private: System::Void PlayButton_Click(System::Object^  sender, System::EventArgs^  e);
     };

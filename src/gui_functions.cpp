@@ -8,6 +8,7 @@ void packet_queue_init(PacketQueue* pq)
 {
     pq->size    = 0;
     pq->maxsize = 30;
+    pq->abort   = 0;
     pq->firstNode = pq->lastNode = NULL;
     pq->mtx  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
     pq->cond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
@@ -43,7 +44,7 @@ void packet_queue_put(PacketQueue* pq, AVPacket* pkt)
     }
     else
     {
-        while(pq->size >= pq->maxsize) // packet queue full
+        while(pq->size >= pq->maxsize && !pq->abort) // packet queue full
             pthread_cond_wait(pq->cond, pq->mtx);
 
         PacketListNode* nnode = (PacketListNode *)malloc(sizeof(PacketListNode));
@@ -61,7 +62,7 @@ void packet_queue_get(PacketQueue* pq, AVPacket *rpkt)
 {
     PacketListNode* hdNode;
     pthread_mutex_lock(pq->mtx);
-    while(pq->size == 0 || pq->firstNode == NULL) // packet queue empty, wait
+    while(!pq->abort && (pq->size == 0 || pq->firstNode == NULL)) // packet queue empty, wait
         pthread_cond_wait(pq->cond, pq->mtx);
     hdNode = pq->firstNode;
     *rpkt = pq->firstNode->pkt;
@@ -72,9 +73,18 @@ void packet_queue_get(PacketQueue* pq, AVPacket *rpkt)
     pthread_mutex_unlock(pq->mtx);
 }
 
+void packet_queue_abort(PacketQueue* pq)
+{
+    pthread_mutex_lock(pq->mtx);
+    pq->abort = 1;
+    pthread_cond_signal(pq->cond);
+    pthread_mutex_unlock(pq->mtx);
+}
+
 int picture_queue_init(FrameQueue* fq)
 {
     fq->size = fq->ridx = fq->widx = 0;
+    fq->abort = 0;
     fq->max_size = FRAME_QUEUE_SIZE;
     fq->mtx  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
     fq->cond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
@@ -106,9 +116,11 @@ void picture_queue_destory(FrameQueue* fq)
 Frame* picture_queue_get_write_picture(FrameQueue* fq)
 {
     pthread_mutex_lock(fq->mtx);
-    while(fq->size >= FRAME_QUEUE_SIZE)  // frame queue full
+    while(fq->size >= FRAME_QUEUE_SIZE && !fq->abort)  // frame queue full
         pthread_cond_wait(fq->cond, fq->mtx);
     pthread_mutex_unlock(fq->mtx);
+    if(fq->abort)
+        return NULL;
     return &(fq->fqueue[fq->widx]);
 }
 
@@ -125,7 +137,7 @@ Frame* picture_queue_read(FrameQueue* fq)
 {
     Frame* rf;
     pthread_mutex_lock(fq->mtx);
-    while(fq->size == 0)
+    while(fq->size == 0 && !fq->abort)
         pthread_cond_wait(fq->cond, fq->mtx);  // frame queue empty
     rf = &(fq->fqueue[fq->ridx]);
     fq->size--;
@@ -135,14 +147,16 @@ Frame* picture_queue_read(FrameQueue* fq)
     return rf;
 }
 
-Form1::Form1(void)
+void picture_queue_abort(FrameQueue* fq)
 {
-    InitializeComponent();
-    PlayStat = PS_NONE;    // init Player Stat 
-    m_mtxPlayStat  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
-    m_condPlayCond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
-    pthread_mutex_init(m_mtxPlayStat, NULL);
-    pthread_cond_init(m_condPlayCond, NULL);
+    pthread_mutex_lock(fq->mtx);
+    fq->abort = 1;
+    pthread_cond_signal(fq->cond);
+    pthread_mutex_unlock(fq->mtx);
+}
+
+void Form1::PlayerInit()
+{
 
     m_pl = (VideoPlayer*)malloc(sizeof(VideoPlayer));
     packet_queue_init(&(m_pl->videoq));
@@ -155,7 +169,24 @@ Form1::Form1(void)
 
     //rendThread = gcnew Thread(gcnew ParameterizedThreadStart(&renderThreadProc));
     //rendThread->Start(this);
+}
 
+void Form1::PlayerExit()
+{
+    packet_queue_abort(&(m_pl->videoq));
+    picture_queue_abort(&(m_pl->pictq));
+}
+
+Form1::Form1(void)
+{
+    InitializeComponent();
+    PlayStat = PS_NONE;    // init Player Stat 
+    m_mtxPlayStat  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+    m_condPlayCond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
+    pthread_mutex_init(m_mtxPlayStat, NULL);
+    pthread_cond_init(m_condPlayCond, NULL);
+
+    PlayerInit();
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
 }
 
@@ -166,9 +197,11 @@ Form1::~Form1()
     pthread_cond_broadcast(m_condPlayCond);  // send exit to threads
     pthread_mutex_unlock(m_mtxPlayStat);
 
+    PlayerExit();
+
     readThread->Join();   // wait read   thread to finish
     decThread->Join();    // wait decode thread to finish
-    rendThread->Join();   // wait render thread to finish
+    //rendThread->Join();   // wait render thread to finish
 
     packet_queue_destory(&(m_pl->videoq));
     picture_queue_destory(&(m_pl->pictq));
@@ -286,6 +319,33 @@ System::Void Form1::StopButton_Click(System::Object^  sender, System::EventArgs^
     delete g;
 }
 
+System::Void Form1::RenderFrame(void)
+{
+    Graphics^         g = VideoPlaybackPannel->CreateGraphics();
+    Frame* renderFrame  = picture_queue_read(&(m_pl->pictq));
+    int      picWidth   = renderFrame->frame->width;
+    int     picHeight   = renderFrame->frame->height;
+    Bitmap^       pic   = gcnew Bitmap(picWidth, picHeight, PixelFormat::Format24bppRgb);
+    Drawing::Rectangle rect = Drawing::Rectangle(0, 0, picWidth, picHeight);
+    g->Clear(Color::White);
+
+    BitmapData^ bmpData = pic->LockBits(rect, ImageLockMode::ReadWrite, pic->PixelFormat);
+    IntPtr   bmpDataPtr = bmpData->Scan0;
+    int           bytes = Math::Abs(bmpData->Stride) * pic->Height;
+
+    char* p = (char *)bmpDataPtr.ToPointer();
+    for(int cnt = 0; cnt < bytes; cnt += 3)
+    {
+        p[cnt] += 40;      // blue
+        p[cnt + 1] = 90;    // green
+        p[cnt + 2] += 255; // red
+    }
+
+    pic->UnlockBits(bmpData);
+    showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, pic);
+    delete g;
+}
+
 System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^  e) 
 {
     if(String::IsNullOrEmpty(mfilename)) // input file not choosen yet
@@ -296,10 +356,9 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
     pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
     pthread_mutex_unlock(m_mtxPlayStat);
 
-    Frame* renderFrame = picture_queue_read(&(m_pl->pictq));
-
-    Graphics^ g = VideoPlaybackPannel->CreateGraphics();
-    g->Clear(Color::White);
+    //Graphics^ g = VideoPlaybackPannel->CreateGraphics();
+    //g->Clear(Color::White);
+    RenderFrame();
     //Bitmap^ pic = gcnew Bitmap(mfilename);
     //Int32 picWidth = pic->Width, picHeight = pic->Height;
     //char res[20]; 
