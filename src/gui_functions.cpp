@@ -157,8 +157,10 @@ void picture_queue_abort(FrameQueue* fq)
 
 void Form1::PlayerInit()
 {
-
     m_pl = (VideoPlayer*)malloc(sizeof(VideoPlayer));
+    m_pl->frameInterval = 40; // default assume video fps = 25, then frame interval = 40 ms
+    m_pl->width = 1280;
+    m_pl->height = 720;
     packet_queue_init(&(m_pl->videoq));
     picture_queue_init(&(m_pl->pictq));
     readThread = gcnew Thread(gcnew ParameterizedThreadStart(&readThreadProc));
@@ -167,8 +169,8 @@ void Form1::PlayerInit()
     decThread = gcnew Thread(gcnew ParameterizedThreadStart(&decodeThreadProc));
     decThread->Start(this);
 
-    //rendThread = gcnew Thread(gcnew ParameterizedThreadStart(&renderThreadProc));
-    //rendThread->Start(this);
+    rendThread = gcnew Thread(gcnew ParameterizedThreadStart(&renderThreadProc));
+    rendThread->Start(this);
 }
 
 void Form1::PlayerExit()
@@ -201,11 +203,12 @@ Form1::~Form1()
 
     readThread->Join();   // wait read   thread to finish
     decThread->Join();    // wait decode thread to finish
-    //rendThread->Join();   // wait render thread to finish
+    rendThread->Join();   // wait render thread to finish
 
     packet_queue_destory(&(m_pl->videoq));
     picture_queue_destory(&(m_pl->pictq));
     free(m_pl);
+    //m_rpic->Dispose();
 
     pthread_mutex_destroy(m_mtxPlayStat);
     pthread_cond_destroy(m_condPlayCond);
@@ -325,24 +328,22 @@ System::Void Form1::RenderFrame(void)
     Frame* renderFrame  = picture_queue_read(&(m_pl->pictq));
     int      picWidth   = renderFrame->frame->width;
     int     picHeight   = renderFrame->frame->height;
-    Bitmap^       pic   = gcnew Bitmap(picWidth, picHeight, PixelFormat::Format24bppRgb);
     Drawing::Rectangle rect = Drawing::Rectangle(0, 0, picWidth, picHeight);
-    g->Clear(Color::White);
 
-    BitmapData^ bmpData = pic->LockBits(rect, ImageLockMode::ReadWrite, pic->PixelFormat);
+    BitmapData^ bmpData = m_rpic->LockBits(rect, ImageLockMode::ReadWrite, m_rpic->PixelFormat);
     IntPtr   bmpDataPtr = bmpData->Scan0;
-    int           bytes = Math::Abs(bmpData->Stride) * pic->Height;
+    int           bytes = Math::Abs(bmpData->Stride) * m_rpic->Height;
 
     char* p = (char *)bmpDataPtr.ToPointer();
     for(int cnt = 0; cnt < bytes; cnt += 3)
     {
-        p[cnt] += 40;      // blue
-        p[cnt + 1] = 90;    // green
-        p[cnt + 2] += 255; // red
+        p[cnt] += 10;      // blue
+        p[cnt + 1] += 10;    // green
+        p[cnt + 2] += 10; // red
     }
 
-    pic->UnlockBits(bmpData);
-    showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, pic);
+    m_rpic->UnlockBits(bmpData);
+    showFrame(g, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, m_rpic);
     delete g;
 }
 
@@ -351,6 +352,9 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
     if(String::IsNullOrEmpty(mfilename)) // input file not choosen yet
         return;
 
+    //m_rpic->Dispose();
+    m_rpic = gcnew Bitmap(m_pl->width, m_pl->height, PixelFormat::Format24bppRgb);
+
     pthread_mutex_lock(m_mtxPlayStat);
     PlayStat = PS_PLAY;
     pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
@@ -358,7 +362,6 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
 
     //Graphics^ g = VideoPlaybackPannel->CreateGraphics();
     //g->Clear(Color::White);
-    RenderFrame();
     //Bitmap^ pic = gcnew Bitmap(mfilename);
     //Int32 picWidth = pic->Width, picHeight = pic->Height;
     //char res[20]; 

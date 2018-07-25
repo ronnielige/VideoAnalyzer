@@ -71,6 +71,9 @@ typedef struct VideoPlayer{
     PacketQueue     videoq;  // video packet queue
     FrameQueue      pictq;   // video decoded frame queue 
     struct SwsContext *img_convert_ctx;
+    int             frameInterval; // time interval between two frames
+    int             width;
+    int             height;
     int eof;
 } VideoPlayer;
 
@@ -101,7 +104,7 @@ namespace VideoAnalyzer {
         Thread^ decThread;
         Thread^ rendThread;
         VideoPlayer* m_pl;
-
+        Bitmap^      m_rpic; // render picture
         AVCodecContext* m_avctx;
         AVCodec* m_avcodec;
         int video_stream_index;
@@ -404,7 +407,7 @@ namespace VideoAnalyzer {
     private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
     private: System::Void showFrame(Graphics^ g, Int32 pannelWidth, Int32 pannelHeight, Bitmap^ pic);
     private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady);
-    private: System::Void RenderFrame(void);
+    public:  System::Void RenderFrame(void);
     private: System::Void StopButton_Click(System::Object^  sender, System::EventArgs^  e);
     private: System::Void PlayButton_Click(System::Object^  sender, System::EventArgs^  e);
     };

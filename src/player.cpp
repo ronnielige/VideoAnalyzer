@@ -141,6 +141,10 @@ System::Void readThreadProc(Object^ data)
                 AVRational sar = av_guess_sample_aspect_ratio(ic, st, NULL);
                 VidInfoStr += L"\nResolution:\n   " + vcodecpar->width + " x " + vcodecpar->height + "\n"; 
                 stream_component_open(ic, &avctx, &codec, st_index[AVMEDIA_TYPE_VIDEO]);
+
+                mainForm->m_pl->frameInterval = 1000.0 / av_q2d(st->avg_frame_rate);
+                mainForm->m_pl->width  = vcodecpar->width;
+                mainForm->m_pl->height = vcodecpar->height;
                 mainForm->video_stream_index = st_index[AVMEDIA_TYPE_VIDEO];
                 VidInfoStr += L"\nVideo Codec:\n   " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)codec->long_name) + "\n"; 
 
@@ -208,17 +212,17 @@ System::Void decodeThreadProc(Object^ data)
         {
             packet_queue_get(pq, pkt);
             myframe = picture_queue_get_write_picture(fq);
-            do{
-                if(myframe)
-                {
+            if(myframe)
+            {
+                do{
                     got_frame = 0;
                     ret = avcodec_decode_video2(mainForm->m_avctx, myframe->frame, &got_frame, pkt);
                     if(ret < 0)
                         break;
                     pkt->data += pkt->size;
                     pkt->size -= pkt->size;
-                }
-            }while(myframe && pkt->size > 0);
+                }while(pkt->size > 0);
+            }
             av_packet_unref(pkt);
 
             if(got_frame)
@@ -248,7 +252,8 @@ System::Void renderThreadProc(Object^ data)
 
         if(mainForm->PlayStat == PS_PLAY)
         {
-            pfrm = picture_queue_read(fq);
+            mainForm->RenderFrame();
+            Sleep(mainForm->m_pl->frameInterval);
         }
     }
 }
