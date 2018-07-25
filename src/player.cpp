@@ -263,7 +263,8 @@ System::Void renderThreadProc(Object^ data)
         if(mainForm->PlayStat == PS_PLAY)
         {
             mainForm->RenderFrame();
-            Sleep(mainForm->m_pl->frameInterval);
+            //Sleep(mainForm->m_pl->frameInterval);
+            //Sleep(10);//mainForm->m_pl->frameInterval);
         }
     }
 }
