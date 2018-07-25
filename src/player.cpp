@@ -157,8 +157,12 @@ System::Void readThreadProc(Object^ data)
 
             mainForm->m_avcodec = codec;
             mainForm->m_avctx   = avctx;
-
-            picture_queue_alloc_rgbframe(&(mainForm->m_pl->pictq), vcodecpar->width, vcodecpar->height);
+            mainForm->setRenderArea();
+            mainForm->m_rpic = gcnew Bitmap(mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight, PixelFormat::Format24bppRgb);
+            mainForm->m_pl->sws_ctx = sws_getContext(mainForm->m_pl->width, mainForm->m_pl->height, AV_PIX_FMT_YUV420P,
+                                                     mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight, AV_PIX_FMT_BGR24, 
+                                                     SWS_BICUBIC, NULL, NULL, NULL);
+            picture_queue_alloc_rgbframe(&(mainForm->m_pl->pictq), mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight);
 
             pthread_mutex_lock(mainForm->m_mtxPlayStat);
             mainForm->PlayStat = PS_NONE;  // Finished Init, then just to wait

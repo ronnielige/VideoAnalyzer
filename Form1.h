@@ -113,6 +113,11 @@ namespace VideoAnalyzer {
 
         Graphics^ videoPlayGraphic;
 
+        Int32 m_renderTlx;
+        Int32 m_renderTly;
+        Int32 m_renderAreaWidth;
+        Int32 m_renderAreaHeight;
+
         delegate void setVideoInfo(String^ str_res);
         setVideoInfo^ mSetVidInfDelegate;
 
@@ -409,6 +414,7 @@ namespace VideoAnalyzer {
     private: System::Void VideoPlaybackPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
     private: System::Void VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
     private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
+    public:  System::Void setRenderArea();
     private: System::Void showFrame(Graphics^ g, Int32 pannelWidth, Int32 pannelHeight, Bitmap^ pic);
     private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady);
     public:  System::Void RenderFrame(void);

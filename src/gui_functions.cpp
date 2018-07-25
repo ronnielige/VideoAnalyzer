@@ -215,6 +215,10 @@ Form1::Form1(void)
     pthread_mutex_init(m_mtxPlayStat, NULL);
     pthread_cond_init(m_condPlayCond, NULL);
 
+    m_renderTlx = m_renderTly = 0;
+    m_renderAreaWidth  = VideoPlaybackPannel->Width;
+    m_renderAreaHeight = VideoPlaybackPannel->Height;
+
     videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
     PlayerInit();
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
@@ -255,6 +259,14 @@ System::Void Form1::VideoPlaybackPannel_Paint(System::Object^  sender, System::W
     delete videoPlayGraphic;
     videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
     videoPlayGraphic->Clear(Color::White);
+    setRenderArea();
+    if(m_pl->sws_ctx)
+        sws_freeContext(m_pl->sws_ctx);
+    m_pl->sws_ctx = sws_getContext(m_pl->width, m_pl->height, AV_PIX_FMT_YUV420P,
+                                   m_renderAreaWidth, m_renderAreaHeight, AV_PIX_FMT_BGR24, 
+                                   SWS_BICUBIC, NULL, NULL, NULL);
+    m_rpic = gcnew Bitmap(m_renderAreaWidth, m_renderAreaHeight, PixelFormat::Format24bppRgb); // TODO: cause memory leak?
+    picture_queue_alloc_rgbframe(&(m_pl->pictq), m_renderAreaWidth, m_renderAreaHeight);
 }
 
 System::Void Form1::VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
@@ -273,23 +285,45 @@ System::Void Form1::VBVBufferPannel_Paint(System::Object^  sender, System::Windo
     delete g;
 }
 
-System::Void Form1::showFrame(Graphics^ g, Int32 pannelWidth, Int32 pannelHeight, Bitmap^ pic)
+System::Void Form1::setRenderArea()
 {
-    float ScaleY = (float)pannelHeight / pic->Height; 
-    float ScaleX = (float)pannelWidth  / pic->Width; 
-    Int32 ScaledHeight = pannelHeight;
-    Int32 ScaledWidth = pic->Width * ScaleY;
-    Int32 tl_x, tl_y, br_x, br_y;
+    Int32     picWidth = m_pl->width;
+    Int32    picHeight = m_pl->height;
+    Int32  pannelWidth = VideoPlaybackPannel->Width;
+    Int32 pannelHeight = VideoPlaybackPannel->Height;
+    float      fScaleY = (float)pannelHeight / picHeight; 
+    float      fScaleX = (float)pannelWidth  / picWidth; 
+    // scale picture resolution to fit render area
+    Int32 ScaledHeight = pannelHeight;      // first fill y
+    Int32  ScaledWidth = picWidth * pannelHeight / picHeight; // first scale x
     if(ScaledWidth > pannelWidth)
     {
         ScaledWidth  = pannelWidth;
-        ScaledHeight = pic->Height * ScaleX;
+        ScaledHeight = picHeight * pannelWidth  / picWidth;
     }
-    tl_x = (pannelWidth - ScaledWidth) / 2;
-    br_x = (pannelWidth + ScaledWidth) / 2;
-    tl_y = (pannelHeight - ScaledHeight) / 2;
-    br_y = (pannelHeight + ScaledHeight) / 2;
-    g->DrawImage(pic, tl_x, tl_y, ScaledWidth, ScaledHeight);
+    m_renderTlx = (pannelWidth - ScaledWidth) >> 1;
+    m_renderTly = (pannelHeight - ScaledHeight) >> 1;
+    m_renderAreaWidth  = ScaledWidth;
+    m_renderAreaHeight = ScaledHeight;
+}
+
+System::Void Form1::showFrame(Graphics^ g, Int32 pannelWidth, Int32 pannelHeight, Bitmap^ pic)
+{
+    //float ScaleY = (float)pannelHeight / pic->Height; 
+    //float ScaleX = (float)pannelWidth  / pic->Width; 
+    //Int32 ScaledHeight = pannelHeight;
+    //Int32 ScaledWidth = pic->Width * ScaleY;
+    //Int32 tl_x, tl_y, br_x, br_y;
+    //if(ScaledWidth > pannelWidth)
+    //{
+    //    ScaledWidth  = pannelWidth;
+    //    ScaledHeight = pic->Height * ScaleX;
+    //}
+    //tl_x = (pannelWidth - ScaledWidth) / 2;
+    //br_x = (pannelWidth + ScaledWidth) / 2;
+    //tl_y = (pannelHeight - ScaledHeight) / 2;
+    //br_y = (pannelHeight + ScaledHeight) / 2;
+    g->DrawImage(pic, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
 }
 
 System::Void Form1::drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady)
@@ -354,10 +388,10 @@ System::Void Form1::StopButton_Click(System::Object^  sender, System::EventArgs^
 
 System::Void Form1::RenderFrame(void)
 {
-    Frame* renderFrame  = picture_queue_read(&(m_pl->pictq));
-    int      picWidth   = renderFrame->yuvframe->width;
-    int     picHeight   = renderFrame->yuvframe->height;
-    Drawing::Rectangle rect = Drawing::Rectangle(0, 0, picWidth, picHeight);
+    Frame*     renderFrame  = picture_queue_read(&(m_pl->pictq));
+    int       rgbFrmWidth   = renderFrame->rgbframe->width;
+    int      rgbFrmHeight   = renderFrame->rgbframe->height;
+    Drawing::Rectangle rect = Drawing::Rectangle(0, 0, rgbFrmWidth, rgbFrmHeight);
 
     BitmapData^ bmpData = m_rpic->LockBits(rect, ImageLockMode::ReadWrite, m_rpic->PixelFormat);
     IntPtr   bmpDataPtr = bmpData->Scan0;
@@ -376,10 +410,8 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
         return;
 
     //m_rpic->Dispose();
-    m_rpic = gcnew Bitmap(m_pl->width, m_pl->height, PixelFormat::Format24bppRgb);
-    m_pl->sws_ctx = sws_getContext(m_pl->width, m_pl->height, AV_PIX_FMT_YUV420P,
-                                   m_pl->width, m_pl->height, AV_PIX_FMT_BGR24, 
-                                   SWS_BICUBIC, NULL, NULL, NULL);
+    //m_rpic = gcnew Bitmap(m_pl->width, m_pl->height, PixelFormat::Format24bppRgb);
+
 
     pthread_mutex_lock(m_mtxPlayStat);
     PlayStat = PS_PLAY;
