@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "player.h"
+#include "log.h"
 
 extern "C"
 {

@@ -2,6 +2,7 @@
 #include "StdAfx.h"
 #include "Form1.h"
 #include "player.h"
+#include "log.h"
 using namespace VideoAnalyzer;
 
 void packet_queue_init(PacketQueue* pq)
@@ -222,6 +223,8 @@ Form1::Form1(void)
     videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
     PlayerInit();
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
+
+    init_log();
 }
 
 Form1::~Form1()
@@ -248,6 +251,7 @@ Form1::~Form1()
     free(m_mtxPlayStat);
     free(m_condPlayCond);
     
+    uninit_log();
     if (components)
     {
         delete components;
@@ -369,6 +373,7 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
     openFileDialog1->ShowDialog();
     mfilename = openFileDialog1->FileName;
     this->Text = L"VideoAnalyzer " + mfilename;
+    va_log(LOGLEVEL_INFO, "Open File %s\n", (char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(mfilename));
 
     pthread_mutex_lock(m_mtxPlayStat);
     PlayStat = PS_INIT;
