@@ -235,11 +235,11 @@ Form1::~Form1()
     pthread_mutex_unlock(m_mtxPlayStat);
 
     PlayerExit();
-    delete videoPlayGraphic;
 
     readThread->Join();   // wait read   thread to finish
     decThread->Join();    // wait decode thread to finish
     rendThread->Join();   // wait render thread to finish
+    delete videoPlayGraphic;
 
     packet_queue_destory(&(m_pl->videoq));
     picture_queue_destory(&(m_pl->pictq));
