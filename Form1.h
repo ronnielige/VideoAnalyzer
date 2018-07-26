@@ -415,7 +415,6 @@ namespace VideoAnalyzer {
     private: System::Void VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
     private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
     public:  System::Void setRenderArea();
-    private: System::Void showFrame(Graphics^ g, Int32 pannelWidth, Int32 pannelHeight, Bitmap^ pic);
     private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady);
     public:  System::Void RenderFrame(void);
     private: System::Void StopButton_Click(System::Object^  sender, System::EventArgs^  e);

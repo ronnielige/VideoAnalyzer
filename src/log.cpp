@@ -19,7 +19,7 @@ static void get_time_str(char* str)
 static void va_log_internal(char* str)
 {
     char new_str[200];
-    sprintf(new_str, "%s:%3d - %s", DateTime::Now.ToLocalTime().ToString(), DateTime::Now.Millisecond, str);
+    sprintf(new_str, "%s:%03d - %s", DateTime::Now.ToLocalTime().ToString(), DateTime::Now.Millisecond, str);
     fprintf(logFp, new_str);
 }
 

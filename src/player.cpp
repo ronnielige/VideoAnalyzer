@@ -263,6 +263,9 @@ System::Void renderThreadProc(Object^ data)
 
         if(mainForm->PlayStat == PS_PLAY)
         {
+            va_log(LOGLEVEL_INFO, "RenderFrame Started\n");
+            Sleep(40);//mainForm->m_pl->frameInterval);
+            va_log(LOGLEVEL_INFO, "RenderFrame Ended\n");
             mainForm->RenderFrame();
             //Sleep(mainForm->m_pl->frameInterval);
             //Sleep(10);//mainForm->m_pl->frameInterval);

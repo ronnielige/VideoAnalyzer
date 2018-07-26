@@ -311,25 +311,6 @@ System::Void Form1::setRenderArea()
     m_renderAreaHeight = ScaledHeight;
 }
 
-System::Void Form1::showFrame(Graphics^ g, Int32 pannelWidth, Int32 pannelHeight, Bitmap^ pic)
-{
-    //float ScaleY = (float)pannelHeight / pic->Height; 
-    //float ScaleX = (float)pannelWidth  / pic->Width; 
-    //Int32 ScaledHeight = pannelHeight;
-    //Int32 ScaledWidth = pic->Width * ScaleY;
-    //Int32 tl_x, tl_y, br_x, br_y;
-    //if(ScaledWidth > pannelWidth)
-    //{
-    //    ScaledWidth  = pannelWidth;
-    //    ScaledHeight = pic->Height * ScaleX;
-    //}
-    //tl_x = (pannelWidth - ScaledWidth) / 2;
-    //br_x = (pannelWidth + ScaledWidth) / 2;
-    //tl_y = (pannelHeight - ScaledHeight) / 2;
-    //br_y = (pannelHeight + ScaledHeight) / 2;
-    g->DrawImage(pic, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
-}
-
 System::Void Form1::drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady)
 {
     Pen^ pen = gcnew Pen(Color::Gray, 1.0);
@@ -387,7 +368,7 @@ System::Void Form1::StopButton_Click(System::Object^  sender, System::EventArgs^
     PlayStat = PS_PAUSE;
     pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
     pthread_mutex_unlock(m_mtxPlayStat);
-
+    va_log(LOGLEVEL_INFO, "Stop Play\n");
     //videoPlayGraphic->Clear(Color::White);
 }
 
@@ -406,7 +387,9 @@ System::Void Form1::RenderFrame(void)
     memcpy(p, renderFrame->rgbframe->data[0], bytes * sizeof(char));
 
     m_rpic->UnlockBits(bmpData);
-    showFrame(videoPlayGraphic, VideoPlaybackPannel->Width, VideoPlaybackPannel->Height, m_rpic);
+    va_log(LOGLEVEL_INFO, "Show Frame Started\n");
+    videoPlayGraphic->DrawImage(m_rpic, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
+    va_log(LOGLEVEL_INFO, "Show Frame Ended\n");
 }
 
 System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^  e) 
@@ -414,12 +397,10 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
     if(String::IsNullOrEmpty(mfilename)) // input file not choosen yet
         return;
 
-    //m_rpic->Dispose();
-    //m_rpic = gcnew Bitmap(m_pl->width, m_pl->height, PixelFormat::Format24bppRgb);
-
-
     pthread_mutex_lock(m_mtxPlayStat);
     PlayStat = PS_PLAY;
     pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
     pthread_mutex_unlock(m_mtxPlayStat);
+
+    va_log(LOGLEVEL_INFO, "Start to Play\n");
 }
