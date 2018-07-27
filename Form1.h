@@ -21,8 +21,11 @@ typedef struct VideoPlayer{
     FrameQueue      pictq;   // video decoded frame queue 
     struct SwsContext *sws_ctx;
     int             frameInterval; // time interval between two frames
+    AVRational      time_base;
     int             width;
     int             height;
+    long long       playStartTime;  // ms
+    long long       playPauseTime;
     int eof;
 } VideoPlayer;
 
@@ -264,10 +267,10 @@ namespace VideoAnalyzer {
             // 
             // VideoPlaybackPannel
             // 
-            this->DoubleBuffered = true;
-            this->SetStyle(ControlStyles::UserPaint, true);
-            this->SetStyle(ControlStyles::AllPaintingInWmPaint, true); 
-            this->SetStyle(ControlStyles::DoubleBuffer, true);
+            //this->DoubleBuffered = true;
+            //this->SetStyle(ControlStyles::UserPaint, true);
+            //this->SetStyle(ControlStyles::AllPaintingInWmPaint, true); 
+            //this->SetStyle(ControlStyles::DoubleBuffer, true);
 
             this->VideoPlaybackPannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
                 | System::Windows::Forms::AnchorStyles::Left) 
@@ -371,6 +374,8 @@ namespace VideoAnalyzer {
     public:  System::Void setRenderArea();
     private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady);
     public:  System::Void RenderFrame(void);
+    //public:  System::Void SetPlayStartTime(void);
+    //public:  System::Void SetPlayPauseTime(void);
     private: System::Void StopButton_Click(System::Object^  sender, System::EventArgs^  e);
     private: System::Void PlayButton_Click(System::Object^  sender, System::EventArgs^  e);
     };

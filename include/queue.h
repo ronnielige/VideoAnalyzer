@@ -53,7 +53,8 @@ int    picture_queue_alloc_rgbframe(FrameQueue* fq, int width, int height);
 void   picture_queue_destory(FrameQueue* fq);
 Frame* picture_queue_get_write_picture(FrameQueue* fq);
 void   picture_queue_write(FrameQueue* fq);
-Frame* picture_queue_read(FrameQueue* fq);
+Frame* picture_queue_get_read_picture(FrameQueue* fq);
+void   picture_queue_finish_read(FrameQueue* fq);
 void   picture_queue_abort(FrameQueue* fq);
 
 #endif

@@ -12,6 +12,7 @@ void Form1::PlayerInit()
     m_pl->width = 1280;
     m_pl->height = 720;
     m_pl->sws_ctx = NULL;
+    m_pl->playPauseTime = m_pl->playPauseTime = 0;
     packet_queue_init(&(m_pl->videoq));
     picture_queue_init(&(m_pl->pictq));
 
@@ -226,7 +227,7 @@ System::Void Form1::StopButton_Click(System::Object^  sender, System::EventArgs^
 System::Void Form1::RenderFrame(void) // render thread calls
 {
     pthread_mutex_lock(m_mtxRender);
-    Frame*     renderFrame  = picture_queue_read(&(m_pl->pictq));
+    Frame*     renderFrame  = picture_queue_get_read_picture(&(m_pl->pictq));
     int       rgbFrmWidth   = renderFrame->rgbframe->width;
     int      rgbFrmHeight   = renderFrame->rgbframe->height;
 
@@ -246,9 +247,10 @@ System::Void Form1::RenderFrame(void) // render thread calls
 
     m_rpic->UnlockBits(bmpData);
     
-    va_log(LOGLEVEL_INFO, "Render Frame Started: frameSize = (%4d, %4d), RenderArea: topleft = (%4d, %4d), RenderSize = (%4d, %4d)\n", rgbFrmWidth, rgbFrmHeight, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
+    va_log(LOGLEVEL_INFO, "Render Frame(pts = %6dms) Started, frameSize = (%4d, %4d), RenderArea: topleft = (%4d, %4d), RenderSize = (%4d, %4d)\n", (int)(1000 * renderFrame->pts), rgbFrmWidth, rgbFrmHeight, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
     m_videoPlayGraphic->DrawImage(m_rpic, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
-    va_log(LOGLEVEL_INFO, "Render Frame Ended\n");
+    picture_queue_finish_read(&(m_pl->pictq));
+    va_log(LOGLEVEL_INFO, "Render Frame(pts = %6dms) Ended\n", (int)(1000 * renderFrame->pts));
     pthread_mutex_unlock(m_mtxRender);
 }
 

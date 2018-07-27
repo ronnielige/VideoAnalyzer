@@ -153,18 +153,24 @@ void picture_queue_write(FrameQueue* fq)
     pthread_mutex_unlock(fq->mtx);
 }
 
-Frame* picture_queue_read(FrameQueue* fq)
+Frame* picture_queue_get_read_picture(FrameQueue* fq)
 {
     Frame* rf;
     pthread_mutex_lock(fq->mtx);
     while(fq->size == 0 && !fq->abort)
         pthread_cond_wait(fq->cond, fq->mtx);  // frame queue empty
+    pthread_mutex_unlock(fq->mtx);
     rf = &(fq->fqueue[fq->ridx]);
+    return rf;
+}
+
+void picture_queue_finish_read(FrameQueue* fq)
+{
+    pthread_mutex_lock(fq->mtx);
     fq->size--;
     fq->ridx = ((fq->ridx + 1) == FRAME_QUEUE_SIZE)? 0: fq->ridx + 1; //
     pthread_cond_signal(fq->cond);
     pthread_mutex_unlock(fq->mtx);
-    return rf;
 }
 
 void picture_queue_abort(FrameQueue* fq)

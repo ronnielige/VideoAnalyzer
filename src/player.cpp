@@ -144,6 +144,7 @@ System::Void readThreadProc(Object^ data)
                 stream_component_open(ic, &avctx, &codec, st_index[AVMEDIA_TYPE_VIDEO]);
 
                 mainForm->m_pl->frameInterval = (int)(1000.0 / av_q2d(st->avg_frame_rate));
+                mainForm->m_pl->time_base = st->time_base;
                 mainForm->m_pl->width  = vcodecpar->width;
                 mainForm->m_pl->height = vcodecpar->height;
                 mainForm->video_stream_index = st_index[AVMEDIA_TYPE_VIDEO];
@@ -244,12 +245,16 @@ System::Void decodeThreadProc(Object^ data)
 
                 if(got_frame)
                 {
+                    myframe->yuvframe->pts = av_frame_get_best_effort_timestamp(myframe->yuvframe);
+                    myframe->pts = (myframe->yuvframe->pts == AV_NOPTS_VALUE) ? NAN : myframe->yuvframe->pts * av_q2d(mainForm->m_pl->time_base);
+                    
                     if(!mainForm->m_doscale)
                     {
                         sws_scale(mainForm->m_pl->sws_ctx, 
                                   myframe->yuvframe->data, myframe->yuvframe->linesize, 0, myframe->yuvframe->height, 
                                   myframe->rgbframe->data, myframe->rgbframe->linesize);
                     }
+                    va_log(LOGLEVEL_FULL, "Decoded frame pts = %8d ms, %lld \n", (int)(1000 * myframe->pts), DateTime::Now.ToFileTime() / 10000);
                     picture_queue_write(fq);
                 }
             }
@@ -279,7 +284,7 @@ System::Void renderThreadProc(Object^ data)
         {
             //va_log(LOGLEVEL_INFO, "RenderFrame Started\n");
             mainForm->RenderFrame();
-            Sleep(10);
+            //Sleep(5);
             //va_log(LOGLEVEL_INFO, "RenderFrame Ended\n");
             //Sleep(mainForm->m_pl->frameInterval);
         }
