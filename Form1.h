@@ -15,8 +15,6 @@ enum
     PS_EXIT  = 4,
 };
 
-
-
 typedef struct VideoPlayer{
     AVCodecContext* avctx;
     PacketQueue     videoq;  // video packet queue

@@ -1,6 +1,6 @@
 #ifndef _QUEUE_H_
 #define _QUEUE_H_
-
+#include "w32thread.h"
 extern "C"
 {
 #define __STDC_CONSTANT_MACROS
