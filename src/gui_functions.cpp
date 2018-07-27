@@ -189,6 +189,12 @@ void Form1::PlayerInit()
     m_pl->sws_ctx = NULL;
     packet_queue_init(&(m_pl->videoq));
     picture_queue_init(&(m_pl->pictq));
+
+    PlayStat = PS_NONE;    // init Player Stat 
+    pthread_mutex_init(m_mtxPlayStat, NULL);
+    pthread_cond_init(m_condPlayCond, NULL);
+    pthread_mutex_init(m_mtxRender, NULL);
+
     readThread = gcnew Thread(gcnew ParameterizedThreadStart(&readThreadProc));
     readThread->Start(this);
 
@@ -205,18 +211,34 @@ void Form1::PlayerExit()
     picture_queue_abort(&(m_pl->pictq));
     if(m_pl->sws_ctx)
         sws_freeContext(m_pl->sws_ctx);
+
+    pthread_mutex_lock(m_mtxPlayStat);
+    PlayStat = PS_EXIT;
+    pthread_cond_broadcast(m_condPlayCond);  // send exit to threads
+    pthread_mutex_unlock(m_mtxPlayStat);
+
+    readThread->Join();   // wait read   thread to finish
+    decThread->Join();    // wait decode thread to finish
+    rendThread->Join();   // wait render thread to finish
+
+    packet_queue_destory(&(m_pl->videoq));
+    picture_queue_destory(&(m_pl->pictq));
+    free(m_pl);
+
+    pthread_mutex_destroy(m_mtxPlayStat);
+    pthread_cond_destroy(m_condPlayCond);
+    pthread_mutex_destroy(m_mtxRender);
+    free(m_mtxPlayStat);
+    free(m_condPlayCond);
+    free(m_mtxRender);
 }
 
 Form1::Form1(void)
 {
     InitializeComponent();
-    PlayStat = PS_NONE;    // init Player Stat 
     m_mtxPlayStat  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
     m_condPlayCond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
     m_mtxRender    = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(m_mtxPlayStat, NULL);
-    pthread_cond_init(m_condPlayCond, NULL);
-    pthread_mutex_init(m_mtxRender, NULL);
 
     m_renderTlx = m_renderTly = 0;
     m_doscale = 0;
@@ -232,30 +254,9 @@ Form1::Form1(void)
 
 Form1::~Form1()
 {
-    pthread_mutex_lock(m_mtxPlayStat);
-    PlayStat = PS_EXIT;
-    pthread_cond_broadcast(m_condPlayCond);  // send exit to threads
-    pthread_mutex_unlock(m_mtxPlayStat);
-
     PlayerExit();
-
-    readThread->Join();   // wait read   thread to finish
-    decThread->Join();    // wait decode thread to finish
-    rendThread->Join();   // wait render thread to finish
     delete m_videoPlayGraphic;
 
-    packet_queue_destory(&(m_pl->videoq));
-    picture_queue_destory(&(m_pl->pictq));
-    free(m_pl);
-    //m_rpic->Dispose();
-
-    pthread_mutex_destroy(m_mtxPlayStat);
-    pthread_cond_destroy(m_condPlayCond);
-    pthread_mutex_destroy(m_mtxRender);
-    free(m_mtxPlayStat);
-    free(m_condPlayCond);
-    free(m_mtxRender);
-    
     uninit_log();
     if (components)
     {
