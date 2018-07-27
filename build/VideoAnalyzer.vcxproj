@@ -211,6 +211,7 @@
     <ClInclude Include="..\include\libavutil\xtea.h" />
     <ClInclude Include="..\include\log.h" />
     <ClInclude Include="..\include\player.h" />
+    <ClInclude Include="..\include\queue.h" />
     <ClInclude Include="..\include\w32thread.h" />
     <ClInclude Include="..\resource.h" />
     <ClInclude Include="..\stdafx.h" />

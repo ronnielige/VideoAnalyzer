@@ -12,8 +12,7 @@ using namespace VideoAnalyzer;
 #define LOGLEVEL_DEBUG 4
 #define LOGLEVEL_FULL  5
 
-
-void init_log();
+int init_log();
 void va_log(int level, char* format, ...);
 void uninit_log();
 #endif

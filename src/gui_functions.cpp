@@ -249,7 +249,10 @@ Form1::Form1(void)
     PlayerInit();
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
 
-    init_log();
+    if(init_log() < 0)
+    {
+        exit(1);
+    }
 }
 
 Form1::~Form1()

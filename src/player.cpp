@@ -20,7 +20,7 @@ extern "C"
 
 int stream_component_open(AVFormatContext *ic, AVCodecContext** avctx, AVCodec** codec, int stream_index)
 {
-    if (stream_index < 0 || stream_index >= ic->nb_streams)
+    if (stream_index < 0 || (unsigned int)stream_index >= ic->nb_streams)
         return -1;
     *avctx = ic->streams[stream_index]->codec;
     *codec = avcodec_find_decoder((*avctx)->codec_id);
@@ -40,30 +40,30 @@ int stream_component_open(AVFormatContext *ic, AVCodecContext** avctx, AVCodec**
 
 void dump_format(AVFormatContext* ic, int vid_stream_index, String^& videoInfo)
 {
-    char fmt_str[50];
+    char fmt_str[100];
     // Show Duration in Video Info List
     if(ic->duration != AV_NOPTS_VALUE)
     {   
         int hours, mins, secs, us, start_secs, start_us;
         int64_t duration = ic->duration + (ic->duration <= INT64_MAX - 5000 ? 5000 : 0);
-        secs  = duration / AV_TIME_BASE;
-        us    = duration % AV_TIME_BASE;
+        secs  = (int)(duration / AV_TIME_BASE);
+        us    = (int)(duration % AV_TIME_BASE);
         mins  = secs / 60;
         secs %= 60;
         hours = mins / 60;
         mins %= 60;
 
         if (ic->start_time != AV_NOPTS_VALUE) {
-            start_secs = llabs(ic->start_time / AV_TIME_BASE);
+            start_secs = (int)llabs(ic->start_time / AV_TIME_BASE);
             start_us   = (int) av_rescale(llabs(ic->start_time % AV_TIME_BASE), 1000000, AV_TIME_BASE);
         }
-        sprintf(fmt_str, "%02d:%02d:%02d.%02d \\ %s%d.%06d", hours, mins, secs, (100 * us) / AV_TIME_BASE, ic->start_time >= 0 ? "" : "-", start_secs, start_us);
+        sprintf_s(fmt_str, sizeof(fmt_str), "%02d:%02d:%02d.%02d \\ %s%d.%06d", hours, mins, secs, (100 * us) / AV_TIME_BASE, ic->start_time >= 0 ? "" : "-", start_secs, start_us);
         videoInfo += L"\nDuration \\ start:\n   " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)fmt_str) + "\n";
     }
     // Show Total File Bitrate in Video Info List
     if(ic->bit_rate)
     {
-        sprintf(fmt_str, "%d kb/s", (int64_t)ic->bit_rate / 1000);
+        sprintf_s(fmt_str, sizeof(fmt_str), "%d kb/s", (int64_t)ic->bit_rate / 1000);
         videoInfo += L"\nFile BitRate:\n   " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)fmt_str) + "\n";
     }
 
@@ -74,7 +74,7 @@ void dump_format(AVFormatContext* ic, int vid_stream_index, String^& videoInfo)
         int fps = st->avg_frame_rate.den && st->avg_frame_rate.num;
         if(fps)
         {
-            sprintf(fmt_str, " %5.2f", av_q2d(st->avg_frame_rate));
+            sprintf_s(fmt_str, sizeof(fmt_str), " %5.2f", av_q2d(st->avg_frame_rate));
             videoInfo += L"\nFrame Rate:\n   " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)fmt_str) + "\n";
         }
     }
@@ -143,7 +143,7 @@ System::Void readThreadProc(Object^ data)
                 VidInfoStr += L"\nResolution:\n   " + vcodecpar->width + " x " + vcodecpar->height + "\n"; 
                 stream_component_open(ic, &avctx, &codec, st_index[AVMEDIA_TYPE_VIDEO]);
 
-                mainForm->m_pl->frameInterval = 1000.0 / av_q2d(st->avg_frame_rate);
+                mainForm->m_pl->frameInterval = (int)(1000.0 / av_q2d(st->avg_frame_rate));
                 mainForm->m_pl->width  = vcodecpar->width;
                 mainForm->m_pl->height = vcodecpar->height;
                 mainForm->video_stream_index = st_index[AVMEDIA_TYPE_VIDEO];
@@ -263,7 +263,6 @@ System::Void renderThreadProc(Object^ data)
 {
     Form1^ mainForm = (Form1^)data;
     FrameQueue*  fq = &(mainForm->m_pl->pictq);
-    Frame* pfrm;
     while(1)
     {
         pthread_mutex_lock(mainForm->m_mtxPlayStat);
