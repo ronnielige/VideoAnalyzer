@@ -9,6 +9,7 @@ void init_log()
 {
     sprintf(logfile, "%d%02d%02d_%02d%02d%02d.log", DateTime::Now.Year, DateTime::Now.Month, DateTime::Now.Day, DateTime::Now.Hour, DateTime::Now.Minute, DateTime::Now.Second);
     logFp = fopen(logfile, "w");
+    setvbuf(logFp, NULL, _IOFBF, 10240); // write file every 10240 bytes
 }
 
 static void get_time_str(char* str)

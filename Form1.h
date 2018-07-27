@@ -102,6 +102,7 @@ namespace VideoAnalyzer {
         Int32 PlayStat;
         static pthread_mutex_t* m_mtxPlayStat;
         static pthread_cond_t*  m_condPlayCond;
+        static pthread_mutex_t* m_mtxRender;
         Thread^ readThread;
         Thread^ decThread;
         Thread^ rendThread;
@@ -110,8 +111,9 @@ namespace VideoAnalyzer {
         AVCodecContext* m_avctx;
         AVCodec* m_avcodec;
         int video_stream_index;
+        bool m_doscale;
 
-        Graphics^ videoPlayGraphic;
+        Graphics^ m_videoPlayGraphic;
 
         Int32 m_renderTlx;
         Int32 m_renderTly;

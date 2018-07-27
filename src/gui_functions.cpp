@@ -213,14 +213,17 @@ Form1::Form1(void)
     PlayStat = PS_NONE;    // init Player Stat 
     m_mtxPlayStat  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
     m_condPlayCond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
+    m_mtxRender    = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
     pthread_mutex_init(m_mtxPlayStat, NULL);
     pthread_cond_init(m_condPlayCond, NULL);
+    pthread_mutex_init(m_mtxRender, NULL);
 
     m_renderTlx = m_renderTly = 0;
+    m_doscale = 0;
     m_renderAreaWidth  = VideoPlaybackPannel->Width;
     m_renderAreaHeight = VideoPlaybackPannel->Height;
 
-    videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
+    m_videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
     PlayerInit();
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
 
@@ -239,7 +242,7 @@ Form1::~Form1()
     readThread->Join();   // wait read   thread to finish
     decThread->Join();    // wait decode thread to finish
     rendThread->Join();   // wait render thread to finish
-    delete videoPlayGraphic;
+    delete m_videoPlayGraphic;
 
     packet_queue_destory(&(m_pl->videoq));
     picture_queue_destory(&(m_pl->pictq));
@@ -248,8 +251,10 @@ Form1::~Form1()
 
     pthread_mutex_destroy(m_mtxPlayStat);
     pthread_cond_destroy(m_condPlayCond);
+    pthread_mutex_destroy(m_mtxRender);
     free(m_mtxPlayStat);
     free(m_condPlayCond);
+    free(m_mtxRender);
     
     uninit_log();
     if (components)
@@ -260,17 +265,32 @@ Form1::~Form1()
 
 System::Void Form1::VideoPlaybackPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
 {
-    delete videoPlayGraphic;
-    videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
-    videoPlayGraphic->Clear(Color::White);
+    pthread_mutex_lock(m_mtxRender);
+
+    delete m_videoPlayGraphic;
+    m_videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
+    m_videoPlayGraphic->Clear(Color::White);
     setRenderArea();
     if(m_pl->sws_ctx)
         sws_freeContext(m_pl->sws_ctx);
-    m_pl->sws_ctx = sws_getContext(m_pl->width, m_pl->height, AV_PIX_FMT_YUV420P,
-                                   m_renderAreaWidth, m_renderAreaHeight, AV_PIX_FMT_BGR24, 
-                                   SWS_BICUBIC, NULL, NULL, NULL);
-    m_rpic = gcnew Bitmap(m_renderAreaWidth, m_renderAreaHeight, PixelFormat::Format24bppRgb); // TODO: cause memory leak?
-    picture_queue_alloc_rgbframe(&(m_pl->pictq), m_renderAreaWidth, m_renderAreaHeight);
+    if(m_doscale)
+    {
+        m_pl->sws_ctx = sws_getContext(m_pl->width, m_pl->height, AV_PIX_FMT_YUV420P,
+                                       m_renderAreaWidth, m_renderAreaHeight, AV_PIX_FMT_BGR24, 
+                                       SWS_BICUBIC, NULL, NULL, NULL);
+        m_rpic = gcnew Bitmap(m_renderAreaWidth, m_renderAreaHeight, PixelFormat::Format24bppRgb); // TODO: cause memory leak?
+        picture_queue_alloc_rgbframe(&(m_pl->pictq), m_renderAreaWidth, m_renderAreaHeight);
+    }
+    else
+    {
+        m_pl->sws_ctx = sws_getContext(m_pl->width, m_pl->height, AV_PIX_FMT_YUV420P,
+                                       m_pl->width, m_pl->height, AV_PIX_FMT_BGR24, 
+                                       SWS_BICUBIC, NULL, NULL, NULL);
+        m_rpic = gcnew Bitmap(m_pl->width, m_pl->height, PixelFormat::Format24bppRgb); // TODO: cause memory leak?
+        //picture_queue_alloc_rgbframe(&(m_pl->pictq), m_pl->width, m_pl->height);
+    }
+
+    pthread_mutex_unlock(m_mtxRender);
 }
 
 System::Void Form1::VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
@@ -305,10 +325,12 @@ System::Void Form1::setRenderArea()
         ScaledWidth  = pannelWidth;
         ScaledHeight = picHeight * pannelWidth  / picWidth;
     }
+
     m_renderTlx = (pannelWidth - ScaledWidth) >> 1;
     m_renderTly = (pannelHeight - ScaledHeight) >> 1;
     m_renderAreaWidth  = ScaledWidth;
     m_renderAreaHeight = ScaledHeight;
+    va_log(LOGLEVEL_INFO, "setRenderArea: VideoRenderWindiw Size (%4d, %4d); RenderArea: topleft = (%4d, %4d), Size = (%4d, %4d)\n", pannelWidth, pannelHeight, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
 }
 
 System::Void Form1::drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady)
@@ -369,14 +391,21 @@ System::Void Form1::StopButton_Click(System::Object^  sender, System::EventArgs^
     pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
     pthread_mutex_unlock(m_mtxPlayStat);
     va_log(LOGLEVEL_INFO, "Stop Play\n");
-    //videoPlayGraphic->Clear(Color::White);
+    //m_videoPlayGraphic->Clear(Color::White);
 }
 
-System::Void Form1::RenderFrame(void)
+System::Void Form1::RenderFrame(void) // render thread calls
 {
+    pthread_mutex_lock(m_mtxRender);
     Frame*     renderFrame  = picture_queue_read(&(m_pl->pictq));
     int       rgbFrmWidth   = renderFrame->rgbframe->width;
     int      rgbFrmHeight   = renderFrame->rgbframe->height;
+
+    if(m_doscale)
+        sws_scale(m_pl->sws_ctx, 
+                  renderFrame->yuvframe->data, renderFrame->yuvframe->linesize, 0, renderFrame->yuvframe->height, 
+                  renderFrame->rgbframe->data, renderFrame->rgbframe->linesize);
+
     Drawing::Rectangle rect = Drawing::Rectangle(0, 0, rgbFrmWidth, rgbFrmHeight);
 
     BitmapData^ bmpData = m_rpic->LockBits(rect, ImageLockMode::ReadWrite, m_rpic->PixelFormat);
@@ -387,9 +416,11 @@ System::Void Form1::RenderFrame(void)
     memcpy(p, renderFrame->rgbframe->data[0], bytes * sizeof(char));
 
     m_rpic->UnlockBits(bmpData);
-    va_log(LOGLEVEL_INFO, "Show Frame Started\n");
-    videoPlayGraphic->DrawImage(m_rpic, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
-    va_log(LOGLEVEL_INFO, "Show Frame Ended\n");
+    
+    va_log(LOGLEVEL_INFO, "Render Frame Started: frameSize = (%4d, %4d), RenderArea: topleft = (%4d, %4d), RenderSize = (%4d, %4d)\n", rgbFrmWidth, rgbFrmHeight, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
+    m_videoPlayGraphic->DrawImage(m_rpic, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
+    va_log(LOGLEVEL_INFO, "Render Frame Ended\n");
+    pthread_mutex_unlock(m_mtxRender);
 }
 
 System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^  e) 

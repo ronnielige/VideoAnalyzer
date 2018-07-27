@@ -159,11 +159,23 @@ System::Void readThreadProc(Object^ data)
             mainForm->m_avcodec = codec;
             mainForm->m_avctx   = avctx;
             mainForm->setRenderArea();
-            mainForm->m_rpic = gcnew Bitmap(mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight, PixelFormat::Format24bppRgb);
-            mainForm->m_pl->sws_ctx = sws_getContext(mainForm->m_pl->width, mainForm->m_pl->height, AV_PIX_FMT_YUV420P,
-                                                     mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight, AV_PIX_FMT_BGR24, 
-                                                     SWS_BICUBIC, NULL, NULL, NULL);
-            picture_queue_alloc_rgbframe(&(mainForm->m_pl->pictq), mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight);
+            if(mainForm->m_doscale)
+            {
+                mainForm->m_rpic = gcnew Bitmap(mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight, PixelFormat::Format24bppRgb);
+                mainForm->m_pl->sws_ctx = sws_getContext(mainForm->m_pl->width, mainForm->m_pl->height, AV_PIX_FMT_YUV420P,
+                                                         mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight, AV_PIX_FMT_BGR24, 
+                                                         SWS_BICUBIC, NULL, NULL, NULL);
+                picture_queue_alloc_rgbframe(&(mainForm->m_pl->pictq), mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight);
+            }
+            else
+            {
+                mainForm->m_rpic = gcnew Bitmap(mainForm->m_pl->width, mainForm->m_pl->height, PixelFormat::Format24bppRgb);
+                mainForm->m_pl->sws_ctx = sws_getContext(mainForm->m_pl->width, mainForm->m_pl->height, AV_PIX_FMT_YUV420P,
+                                                         mainForm->m_pl->width, mainForm->m_pl->height, AV_PIX_FMT_BGR24, 
+                                                         SWS_BICUBIC, NULL, NULL, NULL);
+                picture_queue_alloc_rgbframe(&(mainForm->m_pl->pictq), mainForm->m_pl->width, mainForm->m_pl->height);
+            }
+
 
             pthread_mutex_lock(mainForm->m_mtxPlayStat);
             mainForm->PlayStat = PS_NONE;  // Finished Init, then just to wait
@@ -232,9 +244,12 @@ System::Void decodeThreadProc(Object^ data)
 
                 if(got_frame)
                 {
-                    sws_scale(mainForm->m_pl->sws_ctx, 
-                              myframe->yuvframe->data, myframe->yuvframe->linesize, 0, myframe->yuvframe->height, 
-                              myframe->rgbframe->data, myframe->rgbframe->linesize);
+                    if(!mainForm->m_doscale)
+                    {
+                        sws_scale(mainForm->m_pl->sws_ctx, 
+                                  myframe->yuvframe->data, myframe->yuvframe->linesize, 0, myframe->yuvframe->height, 
+                                  myframe->rgbframe->data, myframe->rgbframe->linesize);
+                    }
                     picture_queue_write(fq);
                 }
             }
@@ -263,12 +278,11 @@ System::Void renderThreadProc(Object^ data)
 
         if(mainForm->PlayStat == PS_PLAY)
         {
-            va_log(LOGLEVEL_INFO, "RenderFrame Started\n");
-            Sleep(40);//mainForm->m_pl->frameInterval);
-            va_log(LOGLEVEL_INFO, "RenderFrame Ended\n");
+            //va_log(LOGLEVEL_INFO, "RenderFrame Started\n");
             mainForm->RenderFrame();
+            Sleep(10);
+            //va_log(LOGLEVEL_INFO, "RenderFrame Ended\n");
             //Sleep(mainForm->m_pl->frameInterval);
-            //Sleep(10);//mainForm->m_pl->frameInterval);
         }
     }
 }
