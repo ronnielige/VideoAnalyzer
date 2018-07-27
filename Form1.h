@@ -264,9 +264,14 @@ namespace VideoAnalyzer {
             // 
             // VideoPlaybackPannel
             // 
+            this->DoubleBuffered = true;
+            this->SetStyle(ControlStyles::UserPaint, true);
+            this->SetStyle(ControlStyles::AllPaintingInWmPaint, true); 
+            this->SetStyle(ControlStyles::DoubleBuffer, true);
+
             this->VideoPlaybackPannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
                 | System::Windows::Forms::AnchorStyles::Left) 
-                | System::Windows::Forms::AnchorStyles::Right));
+                | System::Windows::Forms::AnchorStyles::Right));      
             this->VideoPlaybackPannel->AutoScroll = true;
             this->VideoPlaybackPannel->AutoSize = true;
             this->VideoPlaybackPannel->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
