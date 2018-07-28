@@ -19,6 +19,10 @@ void Form1::PlayerInit()
     packet_queue_init(&(m_pl->videoq));
     picture_queue_init(&(m_pl->pictq));
 
+    m_mtxPlayStat  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+    m_condPlayCond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
+    m_mtxRender    = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+
     PlayStat = PS_NONE;    // init Player Stat 
     pthread_mutex_init(m_mtxPlayStat, NULL);
     pthread_cond_init(m_condPlayCond, NULL);
@@ -71,10 +75,7 @@ Form1::Form1(void)
     InitializeComponent();
     if(init_log() < 0) // can't open output log file
         exit(1);
-    
-    m_mtxPlayStat  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
-    m_condPlayCond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
-    m_mtxRender    = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+
 
     m_renderTlx = m_renderTly = 0;
     m_doscale = 0;
@@ -212,6 +213,9 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
     mfilename = openFileDialog1->FileName;
     this->Text = L"VideoAnalyzer " + mfilename;
     va_log(LOGLEVEL_INFO, "Open File %s\n", (char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(mfilename));
+
+    PlayerExit();
+    PlayerInit();
 
     pthread_mutex_lock(m_mtxPlayStat);
     PlayStat = PS_INIT;
