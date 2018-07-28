@@ -83,11 +83,12 @@ void dump_format(AVFormatContext* ic, int vid_stream_index, String^& videoInfo)
 System::Void readThreadProc(Object^ data)
 {
     Form1^ mainForm = (Form1^)data;
+    VideoPlayer* pl = mainForm->m_pl;
     char* fname = NULL;
     int err, ret;
-    AVFormatContext* fmtctx = mainForm->m_pl->avftx;
-    AVCodecContext *avctx = mainForm->m_avctx;
-    AVCodec* codec;// = mainForm->m_avcodec;
+    AVFormatContext* fmtctx = pl->avftx;
+    AVCodecContext *avctx;
+    AVCodec* codec;
     AVPacket pkt1, *pkt = &pkt1;
     int64_t stream_start_time;
     int64_t pkt_ts;
@@ -139,13 +140,11 @@ System::Void readThreadProc(Object^ data)
                 VidInfoStr += L"\nResolution:\n   " + vcodecpar->width + " x " + vcodecpar->height + "\n"; 
                 stream_component_open(fmtctx, &avctx, &codec, st_index[AVMEDIA_TYPE_VIDEO]);
 
-                mainForm->m_pl->frameInterval = (int)(1000.0 / av_q2d(st->avg_frame_rate));
-                mainForm->m_pl->time_base = st->time_base;
-                mainForm->m_pl->width  = vcodecpar->width;
-                mainForm->m_pl->height = vcodecpar->height;
-                mainForm->video_stream_index = st_index[AVMEDIA_TYPE_VIDEO];
+                pl->frameInterval = (int)(1000.0 / av_q2d(st->avg_frame_rate));
+                pl->time_base = st->time_base;
+                pl->width  = vcodecpar->width;
+                pl->height = vcodecpar->height;
                 VidInfoStr += L"\nVideo Codec:\n   " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)codec->long_name) + "\n"; 
-
                 dump_format(fmtctx, st_index[AVMEDIA_TYPE_VIDEO], VidInfoStr);
                 if(vcodecpar->bit_rate)
                     VidInfoStr += L"\nVideo Bitrate:\n   " + (int)(vcodecpar->bit_rate / 1000) + " kbps\n";
@@ -153,24 +152,24 @@ System::Void readThreadProc(Object^ data)
 
             mainForm->Invoke(mainForm->mSetVidInfDelegate, VidInfoStr);
 
-            mainForm->m_avcodec = codec;
-            mainForm->m_avctx   = avctx;
+            //mainForm->m_avcodec = codec;
+            pl->avctx   = avctx;
             mainForm->setRenderArea();
             if(mainForm->m_doscale)
             {
                 mainForm->m_rpic = gcnew Bitmap(mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight, PixelFormat::Format24bppRgb);
-                mainForm->m_pl->sws_ctx = sws_getContext(mainForm->m_pl->width, mainForm->m_pl->height, AV_PIX_FMT_YUV420P,
-                                                         mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight, AV_PIX_FMT_BGR24, 
-                                                         SWS_BICUBIC, NULL, NULL, NULL);
-                picture_queue_alloc_rgbframe(&(mainForm->m_pl->pictq), mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight);
+                pl->sws_ctx = sws_getContext(pl->width, pl->height, AV_PIX_FMT_YUV420P,
+                                             mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight, AV_PIX_FMT_BGR24, 
+                                             SWS_BICUBIC, NULL, NULL, NULL);
+                picture_queue_alloc_rgbframe(&(pl->pictq), mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight);
             }
             else
             {
-                mainForm->m_rpic = gcnew Bitmap(mainForm->m_pl->width, mainForm->m_pl->height, PixelFormat::Format24bppRgb);
-                mainForm->m_pl->sws_ctx = sws_getContext(mainForm->m_pl->width, mainForm->m_pl->height, AV_PIX_FMT_YUV420P,
-                                                         mainForm->m_pl->width, mainForm->m_pl->height, AV_PIX_FMT_BGR24, 
-                                                         SWS_BICUBIC, NULL, NULL, NULL);
-                picture_queue_alloc_rgbframe(&(mainForm->m_pl->pictq), mainForm->m_pl->width, mainForm->m_pl->height);
+                mainForm->m_rpic = gcnew Bitmap(pl->width, pl->height, PixelFormat::Format24bppRgb);
+                pl->sws_ctx = sws_getContext(pl->width, pl->height, AV_PIX_FMT_YUV420P,
+                                             pl->width, pl->height, AV_PIX_FMT_BGR24, 
+                                             SWS_BICUBIC, NULL, NULL, NULL);
+                picture_queue_alloc_rgbframe(&(pl->pictq), pl->width, pl->height);
             }
 
 
@@ -190,13 +189,14 @@ System::Void readThreadProc(Object^ data)
             {
                 if((ret == AVERROR_EOF || avio_feof(fmtctx->pb))) // reach end of file
                 {
+                    pl->eof = true;
                 }
             }
             stream_start_time = fmtctx->streams[pkt->stream_index]->start_time;
             pkt_ts = pkt->pts == AV_NOPTS_VALUE? pkt->dts: pkt->pts;
             if(pkt->stream_index == AVMEDIA_TYPE_VIDEO)
             {
-                packet_queue_put(&(mainForm->m_pl->videoq), pkt);
+                packet_queue_put(&(pl->videoq), pkt);
             }
         }
     }
@@ -205,6 +205,7 @@ System::Void readThreadProc(Object^ data)
 System::Void decodeThreadProc(Object^ data)
 {
     Form1^ mainForm = (Form1^)data;
+    VideoPlayer* pl = mainForm->m_pl;
     AVPacket pkt1, *pkt = &pkt1;
     Frame* myframe;
     int got_frame, ret = 0;
@@ -230,7 +231,7 @@ System::Void decodeThreadProc(Object^ data)
             {
                 do{
                     got_frame = 0;
-                    ret = avcodec_decode_video2(mainForm->m_avctx, myframe->yuvframe, &got_frame, pkt);
+                    ret = avcodec_decode_video2(pl->avctx, myframe->yuvframe, &got_frame, pkt);
                     if(ret < 0)
                         break;
                     pkt->data += pkt->size;

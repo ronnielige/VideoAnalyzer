@@ -59,9 +59,7 @@ namespace VideoAnalyzer {
         Thread^ rendThread;
         VideoPlayer* m_pl;
         Bitmap^      m_rpic; // render picture
-        AVCodecContext* m_avctx;
-        AVCodec* m_avcodec;
-        int video_stream_index;
+
         bool m_doscale;
 
         Graphics^ m_videoPlayGraphic;

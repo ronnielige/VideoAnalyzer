@@ -14,6 +14,7 @@ void Form1::PlayerInit()
     m_pl->sws_ctx = NULL;
     m_pl->playPauseTime = m_pl->playPauseTime = 0;
     m_pl->avftx = avformat_alloc_context(); // init avformat context
+    m_pl->eof = false;
     
     packet_queue_init(&(m_pl->videoq));
     picture_queue_init(&(m_pl->pictq));
