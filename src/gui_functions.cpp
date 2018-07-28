@@ -107,22 +107,23 @@ System::Void Form1::VideoPlaybackPannel_Paint(System::Object^  sender, System::W
     m_videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
     m_videoPlayGraphic->Clear(Color::White);
     setRenderArea();
-    if(m_pl->sws_ctx)
-        sws_freeContext(m_pl->sws_ctx);
+
     if(m_doscale)
     {
+        if(m_pl->sws_ctx)
+            sws_freeContext(m_pl->sws_ctx);
         m_pl->sws_ctx = sws_getContext(m_pl->width, m_pl->height, AV_PIX_FMT_YUV420P,
                                        m_renderAreaWidth, m_renderAreaHeight, AV_PIX_FMT_BGR24, 
                                        SWS_BICUBIC, NULL, NULL, NULL);
         m_rpic = gcnew Bitmap(m_renderAreaWidth, m_renderAreaHeight, PixelFormat::Format24bppRgb); // TODO: cause memory leak?
         picture_queue_alloc_rgbframe(&(m_pl->pictq), m_renderAreaWidth, m_renderAreaHeight);
     }
-    else
+    else  // nothing to do
     {
-        m_pl->sws_ctx = sws_getContext(m_pl->width, m_pl->height, AV_PIX_FMT_YUV420P,
-                                       m_pl->width, m_pl->height, AV_PIX_FMT_BGR24, 
-                                       SWS_BICUBIC, NULL, NULL, NULL);
-        m_rpic = gcnew Bitmap(m_pl->width, m_pl->height, PixelFormat::Format24bppRgb); // TODO: cause memory leak?
+        //m_pl->sws_ctx = sws_getContext(m_pl->width, m_pl->height, AV_PIX_FMT_YUV420P,
+        //                               m_pl->width, m_pl->height, AV_PIX_FMT_BGR24, 
+        //                               SWS_BICUBIC, NULL, NULL, NULL);
+        //m_rpic = gcnew Bitmap(m_pl->width, m_pl->height, PixelFormat::Format24bppRgb); // TODO: cause memory leak?
         //picture_queue_alloc_rgbframe(&(m_pl->pictq), m_pl->width, m_pl->height);
     }
 
