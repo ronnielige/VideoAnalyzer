@@ -13,6 +13,8 @@ void Form1::PlayerInit()
     m_pl->height = 720;
     m_pl->sws_ctx = NULL;
     m_pl->playPauseTime = m_pl->playPauseTime = 0;
+    m_pl->avftx = avformat_alloc_context(); // init avformat context
+    
     packet_queue_init(&(m_pl->videoq));
     picture_queue_init(&(m_pl->pictq));
 
@@ -35,8 +37,6 @@ void Form1::PlayerExit()
 {
     packet_queue_abort(&(m_pl->videoq));
     picture_queue_abort(&(m_pl->pictq));
-    if(m_pl->sws_ctx)
-        sws_freeContext(m_pl->sws_ctx);
 
     pthread_mutex_lock(m_mtxPlayStat);
     PlayStat = PS_EXIT;
@@ -46,6 +46,12 @@ void Form1::PlayerExit()
     readThread->Join();   // wait read   thread to finish
     decThread->Join();    // wait decode thread to finish
     rendThread->Join();   // wait render thread to finish
+
+    if(m_pl->avftx)
+        avformat_close_input(&m_pl->avftx);
+
+    if(m_pl->sws_ctx)
+        sws_freeContext(m_pl->sws_ctx);
 
     packet_queue_destory(&(m_pl->videoq));
     picture_queue_destory(&(m_pl->pictq));
@@ -62,6 +68,9 @@ void Form1::PlayerExit()
 Form1::Form1(void)
 {
     InitializeComponent();
+    if(init_log() < 0) // can't open output log file
+        exit(1);
+    
     m_mtxPlayStat  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
     m_condPlayCond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
     m_mtxRender    = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
@@ -74,11 +83,6 @@ Form1::Form1(void)
     m_videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
     PlayerInit();
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
-
-    if(init_log() < 0)
-    {
-        exit(1);
-    }
 }
 
 Form1::~Form1()

@@ -85,8 +85,8 @@ System::Void readThreadProc(Object^ data)
     Form1^ mainForm = (Form1^)data;
     char* fname = NULL;
     int err, ret;
-    AVFormatContext* ic = NULL;
-    AVCodecContext *avctx;// = mainForm->m_avctx;
+    AVFormatContext* fmtctx = mainForm->m_pl->avftx;
+    AVCodecContext *avctx = mainForm->m_avctx;
     AVCodec* codec;// = mainForm->m_avcodec;
     AVPacket pkt1, *pkt = &pkt1;
     int64_t stream_start_time;
@@ -111,37 +111,33 @@ System::Void readThreadProc(Object^ data)
             int st_index[AVMEDIA_TYPE_NB] = {-1, -1, -1, -1};
             AVCodecParameters *vcodecpar;
             String^ VidInfoStr;
-            if(ic)
-                avformat_close_input(&ic);
 
-            ic = avformat_alloc_context();
-            if(!ic)
-                return;
             fname = (char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(mainForm->mfilename);
-            err = avformat_open_input(&ic, fname, NULL, NULL);
+            err = avformat_open_input(&fmtctx, fname, NULL, NULL);
             if(err < 0)
             {
-                if(ic)
-                    avformat_close_input(&ic);
+                if(fmtctx)
+                    avformat_close_input(&fmtctx);
                 return; 
             }
-            err = avformat_find_stream_info(ic, NULL);
+            err = avformat_find_stream_info(fmtctx, NULL);
             if(err < 0)
             {
-                if(ic)
-                    avformat_close_input(&ic);
+                if(fmtctx)
+                    avformat_close_input(&fmtctx);
+                va_log(LOGLEVEL_ERROR, "avformat_find_stream_info error\n");
                 return; 
             }
             VidInfoStr = L"\nFile:\n   " + mainForm->mfilename + "\n";
-            VidInfoStr += L"\nFile Format:\n   " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)ic->iformat->long_name) + "\n";
-            st_index[AVMEDIA_TYPE_VIDEO] = av_find_best_stream(ic, AVMEDIA_TYPE_VIDEO, st_index[AVMEDIA_TYPE_VIDEO], -1, NULL, 0);
+            VidInfoStr += L"\nFile Format:\n   " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)fmtctx->iformat->long_name) + "\n";
+            st_index[AVMEDIA_TYPE_VIDEO] = av_find_best_stream(fmtctx, AVMEDIA_TYPE_VIDEO, st_index[AVMEDIA_TYPE_VIDEO], -1, NULL, 0);
 
             if(st_index[AVMEDIA_TYPE_VIDEO] >= 0) {
-                AVStream *st = ic->streams[st_index[AVMEDIA_TYPE_VIDEO]];
+                AVStream *st = fmtctx->streams[st_index[AVMEDIA_TYPE_VIDEO]];
                 vcodecpar = st->codecpar;
-                AVRational sar = av_guess_sample_aspect_ratio(ic, st, NULL);
+                AVRational sar = av_guess_sample_aspect_ratio(fmtctx, st, NULL);
                 VidInfoStr += L"\nResolution:\n   " + vcodecpar->width + " x " + vcodecpar->height + "\n"; 
-                stream_component_open(ic, &avctx, &codec, st_index[AVMEDIA_TYPE_VIDEO]);
+                stream_component_open(fmtctx, &avctx, &codec, st_index[AVMEDIA_TYPE_VIDEO]);
 
                 mainForm->m_pl->frameInterval = (int)(1000.0 / av_q2d(st->avg_frame_rate));
                 mainForm->m_pl->time_base = st->time_base;
@@ -150,7 +146,7 @@ System::Void readThreadProc(Object^ data)
                 mainForm->video_stream_index = st_index[AVMEDIA_TYPE_VIDEO];
                 VidInfoStr += L"\nVideo Codec:\n   " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)codec->long_name) + "\n"; 
 
-                dump_format(ic, st_index[AVMEDIA_TYPE_VIDEO], VidInfoStr);
+                dump_format(fmtctx, st_index[AVMEDIA_TYPE_VIDEO], VidInfoStr);
                 if(vcodecpar->bit_rate)
                     VidInfoStr += L"\nVideo Bitrate:\n   " + (int)(vcodecpar->bit_rate / 1000) + " kbps\n";
             }
@@ -189,14 +185,14 @@ System::Void readThreadProc(Object^ data)
             av_init_packet(pkt);
             pkt->data = NULL;
             pkt->size = 0;
-            ret = av_read_frame(ic, pkt);
+            ret = av_read_frame(fmtctx, pkt);
             if(ret < 0)
             {
-                if((ret == AVERROR_EOF || avio_feof(ic->pb))) // reach end of file
+                if((ret == AVERROR_EOF || avio_feof(fmtctx->pb))) // reach end of file
                 {
                 }
             }
-            stream_start_time = ic->streams[pkt->stream_index]->start_time;
+            stream_start_time = fmtctx->streams[pkt->stream_index]->start_time;
             pkt_ts = pkt->pts == AV_NOPTS_VALUE? pkt->dts: pkt->pts;
             if(pkt->stream_index == AVMEDIA_TYPE_VIDEO)
             {
@@ -204,8 +200,6 @@ System::Void readThreadProc(Object^ data)
             }
         }
     }
-    if(ic)
-        avformat_close_input(&ic);
 }
 
 System::Void decodeThreadProc(Object^ data)
@@ -284,7 +278,7 @@ System::Void renderThreadProc(Object^ data)
         {
             //va_log(LOGLEVEL_INFO, "RenderFrame Started\n");
             mainForm->RenderFrame();
-            //Sleep(5);
+            Sleep(5);
             //va_log(LOGLEVEL_INFO, "RenderFrame Ended\n");
             //Sleep(mainForm->m_pl->frameInterval);
         }

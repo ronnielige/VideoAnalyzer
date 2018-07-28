@@ -16,6 +16,7 @@ enum
 };
 
 typedef struct VideoPlayer{
+    AVFormatContext* avftx;
     AVCodecContext* avctx;
     PacketQueue     videoq;  // video packet queue
     FrameQueue      pictq;   // video decoded frame queue 
