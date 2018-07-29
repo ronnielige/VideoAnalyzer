@@ -98,7 +98,10 @@ System::Void readThreadProc(Object^ data)
     {
         pthread_mutex_lock(mainForm->m_mtxPlayStat);
         while(mainForm->PlayStat == PS_NONE || mainForm->PlayStat == PS_PAUSE) // wait until start play
+        {
+            mainForm->readThStat = PS_PAUSE;
             pthread_cond_wait(mainForm->m_condPlayCond, mainForm->m_mtxPlayStat);
+        }
         if(mainForm->PlayStat == PS_EXIT) // exit
         {
             pthread_mutex_unlock(mainForm->m_mtxPlayStat);
@@ -113,6 +116,7 @@ System::Void readThreadProc(Object^ data)
             AVCodecParameters *vcodecpar;
             String^ VidInfoStr;
 
+            mainForm->readThStat = PS_INIT;
             fname = (char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(mainForm->mfilename);
             err = avformat_open_input(&fmtctx, fname, NULL, NULL);
             if(err < 0)
@@ -172,7 +176,6 @@ System::Void readThreadProc(Object^ data)
                 picture_queue_alloc_rgbframe(&(pl->pictq), pl->width, pl->height);
             }
 
-
             pthread_mutex_lock(mainForm->m_mtxPlayStat);
             mainForm->PlayStat = PS_NONE;  // Finished Init, then just to wait
             pthread_cond_broadcast(mainForm->m_condPlayCond); 
@@ -181,6 +184,7 @@ System::Void readThreadProc(Object^ data)
 
         if(mainForm->PlayStat == PS_PLAY)
         {
+            mainForm->readThStat = PS_PLAY;
             av_init_packet(pkt);
             pkt->data = NULL;
             pkt->size = 0;
@@ -220,14 +224,18 @@ System::Void decodeThreadProc(Object^ data)
             return;
         }
         while(mainForm->PlayStat != PS_PLAY && mainForm->PlayStat != PS_EXIT) // wait until start play
+        {
+            mainForm->decThStat = PS_PAUSE;
             pthread_cond_wait(mainForm->m_condPlayCond, mainForm->m_mtxPlayStat);
+        }
         pthread_mutex_unlock(mainForm->m_mtxPlayStat);
 
         if(mainForm->PlayStat == PS_PLAY)
         {
-            packet_queue_get(pq, pkt);
+            mainForm->decThStat = PS_PLAY;
+            ret = packet_queue_get(pq, pkt);
             myframe = picture_queue_get_write_picture(fq);
-            if(myframe)
+            if(myframe && ret >= 0)
             {
                 do{
                     got_frame = 0;
@@ -243,18 +251,19 @@ System::Void decodeThreadProc(Object^ data)
                     myframe->yuvframe->pts = av_frame_get_best_effort_timestamp(myframe->yuvframe);
                     myframe->pts = (myframe->yuvframe->pts == AV_NOPTS_VALUE) ? NAN : myframe->yuvframe->pts * av_q2d(mainForm->m_pl->time_base);
                     
-                    if(!mainForm->m_doscale)
+                    if(1)
                     {
+                        va_log(LOGLEVEL_INFO, "Decode frame pts = %8d ms, sws_scale width, height = %d, %d\n", (int)(1000 * myframe->pts), myframe->rgbframe->width, myframe->rgbframe->height);
                         sws_scale(mainForm->m_pl->sws_ctx, 
                                   myframe->yuvframe->data, myframe->yuvframe->linesize, 0, myframe->yuvframe->height, 
                                   myframe->rgbframe->data, myframe->rgbframe->linesize);
+                        myframe->b_rgbready = true;
                     }
                     va_log(LOGLEVEL_FULL, "Decoded frame pts = %8d ms, %lld \n", (int)(1000 * myframe->pts), DateTime::Now.ToFileTime() / 10000);
                     picture_queue_write(fq);
                 }
             }
             av_packet_unref(pkt);
-
         }
     }
 }
@@ -272,11 +281,15 @@ System::Void renderThreadProc(Object^ data)
             return;
         }
         while(mainForm->PlayStat != PS_PLAY && mainForm->PlayStat != PS_EXIT) // wait until start play
+        {
+            mainForm->rendThStat = PS_PAUSE;
             pthread_cond_wait(mainForm->m_condPlayCond, mainForm->m_mtxPlayStat);
+        }
         pthread_mutex_unlock(mainForm->m_mtxPlayStat);
 
         if(mainForm->PlayStat == PS_PLAY)
         {
+            mainForm->rendThStat = PS_PLAY;
             //va_log(LOGLEVEL_INFO, "RenderFrame Started\n");
             mainForm->RenderFrame();
             Sleep(5);

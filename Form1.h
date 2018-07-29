@@ -53,14 +53,17 @@ namespace VideoAnalyzer {
         Int32 PlayStat;
         static pthread_mutex_t* m_mtxPlayStat;
         static pthread_cond_t*  m_condPlayCond;
-        static pthread_mutex_t* m_mtxRender;
         Thread^ readThread;
         Thread^ decThread;
         Thread^ rendThread;
+
+        Int32 readThStat;
+        Int32 decThStat;
+        Int32 rendThStat;
         VideoPlayer* m_pl;
         Bitmap^      m_rpic; // render picture
 
-        bool m_doscale;
+        bool m_doscale;  // resize rgbframe to render window size by ourself
 
         Graphics^ m_videoPlayGraphic;
 

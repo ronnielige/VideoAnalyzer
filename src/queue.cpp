@@ -45,6 +45,12 @@ void packet_queue_put(PacketQueue* pq, AVPacket* pkt)
         while(pq->size >= pq->maxsize && !pq->abort) // packet queue full
             pthread_cond_wait(pq->cond, pq->mtx);
 
+        if(pq->abort)
+        {
+            pthread_mutex_unlock(pq->mtx);
+            return;
+        }
+
         PacketListNode* nnode = (PacketListNode *)malloc(sizeof(PacketListNode));
         nnode->pkt  = *pkt;
         nnode->next = NULL;
@@ -56,12 +62,19 @@ void packet_queue_put(PacketQueue* pq, AVPacket* pkt)
     pthread_mutex_unlock(pq->mtx);
 }
 
-void packet_queue_get(PacketQueue* pq, AVPacket *rpkt)
+int packet_queue_get(PacketQueue* pq, AVPacket *rpkt)
 {
     PacketListNode* hdNode;
     pthread_mutex_lock(pq->mtx);
     while(!pq->abort && (pq->size == 0 || pq->firstNode == NULL)) // packet queue empty, wait
         pthread_cond_wait(pq->cond, pq->mtx);
+
+    if(pq->abort)
+    {
+        pthread_mutex_unlock(pq->mtx);
+        return -1;
+    }
+
     hdNode = pq->firstNode;
     *rpkt = pq->firstNode->pkt;
     pq->firstNode = pq->firstNode->next;
@@ -69,12 +82,13 @@ void packet_queue_get(PacketQueue* pq, AVPacket *rpkt)
     pq->size--;
     pthread_cond_signal(pq->cond); // inform 
     pthread_mutex_unlock(pq->mtx);
+    return 0;
 }
 
-void packet_queue_abort(PacketQueue* pq)
+void packet_queue_abort(PacketQueue* pq, bool b_abort)
 {
     pthread_mutex_lock(pq->mtx);
-    pq->abort = 1;
+    pq->abort = b_abort;
     pthread_cond_signal(pq->cond);
     pthread_mutex_unlock(pq->mtx);
 }
@@ -111,6 +125,7 @@ int picture_queue_alloc_rgbframe(FrameQueue* fq, int width, int height)
         fq->fqueue[i].rgbframe->format = AV_PIX_FMT_BGR24;
         fq->fqueue[i].rgbframe->width  = width;
         fq->fqueue[i].rgbframe->height = height;
+        fq->fqueue[i].b_rgbready = false;
 
         ret = av_frame_get_buffer(fq->fqueue[i].rgbframe, 32);
         if(ret < 0)
@@ -160,6 +175,8 @@ Frame* picture_queue_get_read_picture(FrameQueue* fq)
     while(fq->size == 0 && !fq->abort)
         pthread_cond_wait(fq->cond, fq->mtx);  // frame queue empty
     pthread_mutex_unlock(fq->mtx);
+    if(fq->abort)
+        return NULL;
     rf = &(fq->fqueue[fq->ridx]);
     return rf;
 }
@@ -173,10 +190,10 @@ void picture_queue_finish_read(FrameQueue* fq)
     pthread_mutex_unlock(fq->mtx);
 }
 
-void picture_queue_abort(FrameQueue* fq)
+void picture_queue_abort(FrameQueue* fq, bool b_abort)
 {
     pthread_mutex_lock(fq->mtx);
-    fq->abort = 1;
+    fq->abort = b_abort;
     pthread_cond_signal(fq->cond);
     pthread_mutex_unlock(fq->mtx);
 }

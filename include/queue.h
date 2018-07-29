@@ -27,12 +27,13 @@ typedef struct PacketQueue{
 void packet_queue_init(PacketQueue* pq);
 void packet_queue_destory(PacketQueue* pq);
 void packet_queue_put(PacketQueue* pq, AVPacket* pkt);
-void packet_queue_get(PacketQueue* pq, AVPacket *rpkt);
-void packet_queue_abort(PacketQueue* pq);
+int  packet_queue_get(PacketQueue* pq, AVPacket *rpkt);
+void packet_queue_abort(PacketQueue* pq, bool b_abort);
 
 typedef struct Frame{
     AVFrame* yuvframe;
     AVFrame* rgbframe;
+    bool b_rgbready;
     double pts;
 }Frame;
 
@@ -55,6 +56,6 @@ Frame* picture_queue_get_write_picture(FrameQueue* fq);
 void   picture_queue_write(FrameQueue* fq);
 Frame* picture_queue_get_read_picture(FrameQueue* fq);
 void   picture_queue_finish_read(FrameQueue* fq);
-void   picture_queue_abort(FrameQueue* fq);
+void   picture_queue_abort(FrameQueue* fq, bool b_abort);
 
 #endif

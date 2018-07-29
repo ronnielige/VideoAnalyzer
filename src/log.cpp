@@ -13,6 +13,7 @@ int init_log()
     if(ret != 0)
         return -1;
     setvbuf(logFp, NULL, _IOFBF, 10240); // write file every 10240 bytes
+    //setvbuf(logFp, NULL, _IOLBF, 200);
     return 0;
 }
 
