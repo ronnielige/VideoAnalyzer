@@ -34,6 +34,7 @@ typedef struct Frame{
     AVFrame* yuvframe;
     AVFrame* rgbframe;
     bool b_rgbready;
+    int    frame_pkt_bits;
     double pts;
 }Frame;
 

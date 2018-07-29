@@ -215,6 +215,7 @@ System::Void decodeThreadProc(Object^ data)
     int got_frame, ret = 0;
     PacketQueue* pq = &(mainForm->m_pl->videoq);
     FrameQueue*  fq = &(mainForm->m_pl->pictq);
+    int frame_pkt_bits = 0;
     while(1)
     {
         pthread_mutex_lock(mainForm->m_mtxPlayStat);
@@ -237,6 +238,7 @@ System::Void decodeThreadProc(Object^ data)
             myframe = picture_queue_get_write_picture(fq);
             if(myframe && ret >= 0)
             {
+                frame_pkt_bits += pkt->size;
                 do{
                     got_frame = 0;
                     ret = avcodec_decode_video2(pl->avctx, myframe->yuvframe, &got_frame, pkt);
@@ -245,12 +247,13 @@ System::Void decodeThreadProc(Object^ data)
                     pkt->data += pkt->size;
                     pkt->size -= pkt->size;
                 }while(pkt->size > 0);
-
+                
                 if(got_frame)
                 {
                     myframe->yuvframe->pts = av_frame_get_best_effort_timestamp(myframe->yuvframe);
                     myframe->pts = (myframe->yuvframe->pts == AV_NOPTS_VALUE) ? NAN : myframe->yuvframe->pts * av_q2d(mainForm->m_pl->time_base);
-                    
+                    myframe->frame_pkt_bits = frame_pkt_bits;
+                    frame_pkt_bits = 0;
                     if(1)
                     {
                         va_log(LOGLEVEL_INFO, "Decode frame pts = %8d ms, sws_scale width, height = %d, %d\n", (int)(1000 * myframe->pts), myframe->rgbframe->width, myframe->rgbframe->height);

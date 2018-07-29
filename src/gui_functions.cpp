@@ -16,6 +16,15 @@ void Form1::PlayerInit()
     m_pl->avftx = avformat_alloc_context(); // init avformat context
     m_pl->eof = false;
     
+    m_bitStat = (BitsStat*)malloc(sizeof(BitsStat));
+    m_bitStat->BitRateAIdx = m_bitStat->FrameBitsAIdx = 0;
+    m_bitStat->cur_pts = m_bitStat->last_pts = 0;
+    m_bitStat->BitRateASize = 1000;
+    m_bitStat->FrameBitsASize = 25000;
+    m_bitStat->BitRateArray = (int *)malloc(sizeof(int) * m_bitStat->BitRateASize);
+    m_bitStat->FrameBitsArray = (int *)malloc(sizeof(int) * m_bitStat->FrameBitsASize);
+    memset(m_bitStat->BitRateArray, 0, sizeof(int) * m_bitStat->BitRateASize);
+
     packet_queue_init(&(m_pl->videoq));
     picture_queue_init(&(m_pl->pictq));
 
@@ -59,6 +68,12 @@ void Form1::PlayerExit()
     packet_queue_destory(&(m_pl->videoq));
     picture_queue_destory(&(m_pl->pictq));
     free(m_pl);
+
+    if(m_bitStat->BitRateArray)
+        free(m_bitStat->BitRateArray);
+    if(m_bitStat->FrameBitsArray)
+        free(m_bitStat->FrameBitsArray);
+    free(m_bitStat);
 
     pthread_mutex_destroy(m_mtxPlayStat);
     pthread_cond_destroy(m_condPlayCond);
@@ -266,6 +281,8 @@ System::Void Form1::RenderFrame(void) // render thread calls
     int       rgbFrmWidth   = renderFrame->rgbframe->width;
     int      rgbFrmHeight   = renderFrame->rgbframe->height;
 
+    updateBitStat(renderFrame->frame_pkt_bits, (int)(renderFrame->pts * 1000));
+
     if(/*!m_doscale || */renderFrame->b_rgbready == false)
     {
         va_log(LOGLEVEL_INFO, "Render frame pts = %8d ms, sws_scale width, height = %d, %d\n", (int)(1000 * renderFrame->pts), renderFrame->rgbframe->width, renderFrame->rgbframe->height);
@@ -289,6 +306,39 @@ System::Void Form1::RenderFrame(void) // render thread calls
     m_videoPlayGraphic->DrawImage(m_rpic, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
     picture_queue_finish_read(&(m_pl->pictq));
     va_log(LOGLEVEL_INFO, "Render Frame(pts = %6dms) Ended\n", (int)(1000 * renderFrame->pts));
+}
+
+System::Void Form1::updateBitStat(int frameBits, int pts)
+{
+    if(m_bitStat->FrameBitsAIdx == m_bitStat->FrameBitsASize - 1)
+    {
+        int* old_array = m_bitStat->FrameBitsArray;
+        int  old_array_size = m_bitStat->FrameBitsASize;
+        m_bitStat->FrameBitsASize *= 2;
+        m_bitStat->FrameBitsArray = (int *)malloc(sizeof(int) * m_bitStat->FrameBitsASize);
+        memcpy(m_bitStat->FrameBitsArray, old_array, old_array_size * sizeof(int));
+        free(old_array);
+    }
+    if(m_bitStat->BitRateAIdx == m_bitStat->BitRateASize - 1)
+    {
+        int* old_array = m_bitStat->BitRateArray;
+        int  old_array_size = m_bitStat->BitRateASize;
+        m_bitStat->BitRateASize *= 2;
+        m_bitStat->BitRateArray = (int *)malloc(sizeof(int) * m_bitStat->BitRateASize);
+        memset(m_bitStat->BitRateArray, 0, m_bitStat->BitRateASize * sizeof(int));
+        memcpy(m_bitStat->BitRateArray, old_array, old_array_size * sizeof(int));
+        free(old_array);
+    }
+
+    m_bitStat->FrameBitsArray[m_bitStat->FrameBitsAIdx++] = frameBits;
+    m_bitStat->cur_pts = pts;
+
+    m_bitStat->BitRateArray[m_bitStat->BitRateAIdx] += frameBits;
+    if(pts - m_bitStat->last_pts >= 1000) // 1s
+    {
+        m_bitStat->last_pts = pts;
+        m_bitStat->BitRateAIdx++;
+    }
 }
 
 System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^  e) 

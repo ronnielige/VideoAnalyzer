@@ -30,6 +30,17 @@ typedef struct VideoPlayer{
     int eof;
 } VideoPlayer;
 
+typedef struct BitsStat{
+    int* FrameBitsArray;
+    int  FrameBitsAIdx;
+    int  FrameBitsASize;
+    int* BitRateArray;
+    int  BitRateAIdx;
+    int  BitRateASize;
+    int  cur_pts;
+    int  last_pts;
+}BitsStat;
+
 namespace VideoAnalyzer {
     using namespace System;
     using namespace System::ComponentModel;
@@ -61,6 +72,7 @@ namespace VideoAnalyzer {
         Int32 decThStat;
         Int32 rendThStat;
         VideoPlayer* m_pl;
+        BitsStat*    m_bitStat;
         Bitmap^      m_rpic; // render picture
 
         bool m_doscale;  // resize rgbframe to render window size by ourself
@@ -276,7 +288,7 @@ namespace VideoAnalyzer {
 
             this->VideoPlaybackPannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
                 | System::Windows::Forms::AnchorStyles::Left) 
-                | System::Windows::Forms::AnchorStyles::Right));      
+                | System::Windows::Forms::AnchorStyles::Right));
             this->VideoPlaybackPannel->AutoScroll = true;
             this->VideoPlaybackPannel->AutoSize = true;
             this->VideoPlaybackPannel->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
@@ -376,6 +388,7 @@ namespace VideoAnalyzer {
     public:  System::Void setRenderArea();
     private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady);
     public:  System::Void RenderFrame(void);
+    public:  System::Void updateBitStat(int frameBits, int pts); 
     //public:  System::Void SetPlayStartTime(void);
     //public:  System::Void SetPlayPauseTime(void);
     private: System::Void StopButton_Click(System::Object^  sender, System::EventArgs^  e);
