@@ -37,8 +37,13 @@ oscillogram::~oscillogram()
 void oscillogram::addPoint(int xValue, int yValue)
 {
     int xPos = xValue * mGridWidth;
-    int yPos = (int)(yValue * mYScale);
+    int yPos = mBlP.Y - (int)(yValue * mYScale);
     mGraphic->DrawLine(mPen, mLastP.X, mLastP.Y, xPos, yPos);
     mLastP.X = xPos;
     mLastP.Y = yPos;
+}
+
+void oscillogram::increadPixBoxWidth(int w)
+{
+    mPicBox->Width += w;
 }

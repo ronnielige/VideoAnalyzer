@@ -183,6 +183,9 @@ System::Void Form1::VideoBitratePannel_Paint(System::Object^  sender, System::Wi
     m_oscBitRate->addPoint(xt, yt);
     xt++;
     yt += 300;
+
+    if(xt % 10 == 0)
+        m_oscBitRate->increadPixBoxWidth(20);
 }
 
 System::Void Form1::VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)

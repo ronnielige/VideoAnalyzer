@@ -12,7 +12,7 @@ using namespace System::Drawing::Imaging;
 
 ref class oscillogram 
 {
-private:
+public:
     PictureBox^ mPicBox;
     Graphics^   mGraphic;
     Pen^        mPen;
@@ -32,6 +32,7 @@ public:
     ~oscillogram();
 
     void addPoint(int xvalue, int yvalue);
+    void increadPixBoxWidth(int w);
 };
 
 #endif
