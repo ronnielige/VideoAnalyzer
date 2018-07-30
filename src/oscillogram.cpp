@@ -6,7 +6,7 @@ oscillogram::oscillogram(PictureBox^ picb, int w, int h)
     int actHeight = 0;
     mPicBox     = picb;
     mGraphic   = mPicBox->CreateGraphics();
-    mPen       = gcnew Pen(Color::Red, 1.0);
+    mPen       = gcnew Pen(Color::Red, 2.0);
     mGraWidth  = w;
     mGraHeight = h;
     mGridWidth = 20;
@@ -26,7 +26,7 @@ oscillogram::oscillogram(PictureBox^ picb, int w, int h)
 
     mYMax = 10000;
     mYScale = (float)actHeight / mYMax;
-    mPen->DashStyle = DashStyle::DashDot;
+    //mPen->DashStyle = DashStyle::DashStyleSolid;
 }
 
 oscillogram::~oscillogram()
@@ -41,6 +41,8 @@ void oscillogram::addPoint(int xValue, int yValue)
     mGraphic->DrawLine(mPen, mLastP.X, mLastP.Y, xPos, yPos);
     mLastP.X = xPos;
     mLastP.Y = yPos;
+    if(mPicBox->Width < xPos)
+        mPicBox->Width = xPos + mGridWidth * 10;
 }
 
 void oscillogram::increadPixBoxWidth(int w)

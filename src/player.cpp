@@ -151,8 +151,13 @@ System::Void readThreadProc(Object^ data)
                 pl->height = vcodecpar->height;
                 VidInfoStr += L"\nVideo Codec:\n   " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)codec->long_name) + "\n"; 
                 dump_format(fmtctx, st_index[AVMEDIA_TYPE_VIDEO], VidInfoStr);
+                if(fmtctx->bit_rate)
+                    mainForm->m_oscBitRate->mYMax = (int)(fmtctx->bit_rate / 1000) * 2;
                 if(vcodecpar->bit_rate)
+                {
                     VidInfoStr += L"\nVideo Bitrate:\n   " + (int)(vcodecpar->bit_rate / 1000) + " kbps\n";
+                    mainForm->m_oscBitRate->mYMax = (int)(vcodecpar->bit_rate / 1000) * 2;
+                }
             }
 
             mainForm->Invoke(mainForm->mSetVidInfDelegate, VidInfoStr);

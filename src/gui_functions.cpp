@@ -180,12 +180,12 @@ System::Void Form1::VideoBitratePannel_Paint(System::Object^  sender, System::Wi
     ////g->Clear(Color::White);
     //drawGrid(g, VideoBitRatePicBox->Width, VideoBitRatePicBox->Height, 20, 0, 0);
     //delete g;
-    m_oscBitRate->addPoint(xt, yt);
-    xt++;
-    yt += 300;
+    //m_oscBitRate->addPoint(xt, yt);
+    //xt++;
+    //yt += 300;
 
-    if(xt % 10 == 0)
-        m_oscBitRate->increadPixBoxWidth(20);
+    //if(xt % 10 == 0)
+    //    m_oscBitRate->increadPixBoxWidth(20);
 }
 
 System::Void Form1::VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
@@ -349,6 +349,7 @@ System::Void Form1::updateBitStat(int frameBits, int pts)
     m_bitStat->BitRateArray[m_bitStat->BitRateAIdx] += frameBits;
     if(pts - m_bitStat->last_pts >= 1000) // 1s
     {
+        m_oscBitRate->addPoint(m_bitStat->BitRateAIdx, m_bitStat->BitRateArray[m_bitStat->BitRateAIdx] / 1000);
         m_bitStat->last_pts = pts;
         m_bitStat->BitRateAIdx++;
     }
