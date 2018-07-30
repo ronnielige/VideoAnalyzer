@@ -97,6 +97,7 @@
     <ClCompile Include="..\AssemblyInfo.cpp" />
     <ClCompile Include="..\src\gui_functions.cpp" />
     <ClCompile Include="..\src\log.cpp" />
+    <ClCompile Include="..\src\oscillogram.cpp" />
     <ClCompile Include="..\src\player.cpp" />
     <ClCompile Include="..\src\queue.cpp" />
     <ClCompile Include="..\stdafx.cpp">
@@ -211,6 +212,7 @@
     <ClInclude Include="..\include\libavutil\version.h" />
     <ClInclude Include="..\include\libavutil\xtea.h" />
     <ClInclude Include="..\include\log.h" />
+    <ClInclude Include="..\include\oscillogram.h" />
     <ClInclude Include="..\include\player.h" />
     <ClInclude Include="..\include\queue.h" />
     <ClInclude Include="..\include\w32thread.h" />

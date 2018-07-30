@@ -95,6 +95,11 @@ Form1::Form1(void)
     m_videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
     PlayerInit();
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
+
+    this->SetStyle(static_cast<ControlStyles>(ControlStyles::DoubleBuffer | ControlStyles::UserPaint | ControlStyles::AllPaintingInWmPaint), true);
+    this->UpdateStyles();
+
+    m_oscBitRate = gcnew oscillogram(VideoBitRatePicBox, VideoBitRatePicBox->Width, VideoBitRatePicBox->Height);
 }
 
 Form1::~Form1()
@@ -166,12 +171,18 @@ System::Void Form1::VideoPlaybackPannel_Paint(System::Object^  sender, System::W
     }
 }
 
+int xt = 1;
+int yt = 100;
+
 System::Void Form1::VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
 {
-    Graphics^ g = VideoBitratePannel->CreateGraphics();
-    g->Clear(Color::White);
-    drawGrid(g, VideoBitratePannel->Width, VideoBitratePannel->Height, 20, 20, 5);
-    delete g;
+    //Graphics^ g = VideoBitRatePicBox->CreateGraphics();
+    ////g->Clear(Color::White);
+    //drawGrid(g, VideoBitRatePicBox->Width, VideoBitRatePicBox->Height, 20, 0, 0);
+    //delete g;
+    m_oscBitRate->addPoint(xt, yt);
+    xt++;
+    yt += 300;
 }
 
 System::Void Form1::VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
@@ -292,7 +303,6 @@ System::Void Form1::RenderFrame(void) // render thread calls
     }
 
     Drawing::Rectangle rect = Drawing::Rectangle(0, 0, rgbFrmWidth, rgbFrmHeight);
-
     BitmapData^ bmpData = m_rpic->LockBits(rect, ImageLockMode::ReadWrite, m_rpic->PixelFormat);
     IntPtr   bmpDataPtr = bmpData->Scan0;
     int           bytes = Math::Abs(bmpData->Stride) * m_rpic->Height;

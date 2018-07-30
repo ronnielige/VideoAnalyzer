@@ -5,6 +5,7 @@
 #include<string>
 #include "w32thread.h"
 #include "queue.h"
+#include "oscillogram.h"
 
 enum 
 {
@@ -41,6 +42,7 @@ typedef struct BitsStat{
     int  last_pts;
 }BitsStat;
 
+
 namespace VideoAnalyzer {
     using namespace System;
     using namespace System::ComponentModel;
@@ -51,6 +53,8 @@ namespace VideoAnalyzer {
     using namespace System::Drawing::Drawing2D;
     using namespace System::Drawing::Imaging;
     using namespace System::Threading;
+
+
     /// <summary>
     /// Summary for Form1
     /// </summary>
@@ -79,10 +83,14 @@ namespace VideoAnalyzer {
 
         Graphics^ m_videoPlayGraphic;
 
+        oscillogram^ m_oscBitRate;
+
         Int32 m_renderTlx;
         Int32 m_renderTly;
         Int32 m_renderAreaWidth;
         Int32 m_renderAreaHeight;
+    private: System::Windows::Forms::PictureBox^  VideoBitRatePicBox;
+    public: 
 
         delegate void setVideoInfo(String^ str_res);
         setVideoInfo^ mSetVidInfDelegate;
@@ -159,12 +167,15 @@ namespace VideoAnalyzer {
             this->VideoInfoLabel = (gcnew System::Windows::Forms::Label());
             this->VideoPlaybackPannel = (gcnew System::Windows::Forms::Panel());
             this->VideoBitratePannel = (gcnew System::Windows::Forms::Panel());
+            this->VideoBitRatePicBox = (gcnew System::Windows::Forms::PictureBox());
             this->VBVBufferPannel = (gcnew System::Windows::Forms::Panel());
             this->PlayButton = (gcnew System::Windows::Forms::Button());
             this->StopButton = (gcnew System::Windows::Forms::Button());
             this->ControlPannel = (gcnew System::Windows::Forms::Panel());
             this->menuStrip1->SuspendLayout();
             this->VideoInfoPannel->SuspendLayout();
+            this->VideoBitratePannel->SuspendLayout();
+            (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->VideoBitRatePicBox))->BeginInit();
             this->ControlPannel->SuspendLayout();
             this->SuspendLayout();
             // 
@@ -302,11 +313,21 @@ namespace VideoAnalyzer {
                 | System::Windows::Forms::AnchorStyles::Right));
             this->VideoBitratePannel->AutoScroll = true;
             this->VideoBitratePannel->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
+            this->VideoBitratePannel->Controls->Add(this->VideoBitRatePicBox);
             this->VideoBitratePannel->Location = System::Drawing::Point(232, 513);
             this->VideoBitratePannel->Name = L"VideoBitratePannel";
             this->VideoBitratePannel->Size = System::Drawing::Size(399, 180);
             this->VideoBitratePannel->TabIndex = 3;
             this->VideoBitratePannel->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &Form1::VideoBitratePannel_Paint);
+            // 
+            // VideoBitRatePicBox
+            // 
+            this->VideoBitRatePicBox->Location = System::Drawing::Point(3, 3);
+            this->VideoBitRatePicBox->Name = L"VideoBitRatePicBox";
+            this->VideoBitRatePicBox->Size = System::Drawing::Size(395, 155);
+            this->VideoBitRatePicBox->TabIndex = 0;
+            this->VideoBitRatePicBox->TabStop = false;
+            this->VideoBitRatePicBox->Click += gcnew System::EventHandler(this, &Form1::VideoBitRatePicBox_Click);
             // 
             // VBVBufferPannel
             // 
@@ -374,6 +395,8 @@ namespace VideoAnalyzer {
             this->menuStrip1->PerformLayout();
             this->VideoInfoPannel->ResumeLayout(false);
             this->VideoInfoPannel->PerformLayout();
+            this->VideoBitratePannel->ResumeLayout(false);
+            (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->VideoBitRatePicBox))->EndInit();
             this->ControlPannel->ResumeLayout(false);
             this->ResumeLayout(false);
             this->PerformLayout();
@@ -392,7 +415,7 @@ namespace VideoAnalyzer {
     //public:  System::Void SetPlayPauseTime(void);
     private: System::Void StopButton_Click(System::Object^  sender, System::EventArgs^  e);
     private: System::Void PlayButton_Click(System::Object^  sender, System::EventArgs^  e);
-    };
+    private: System::Void VideoBitRatePicBox_Click(System::Object^  sender, System::EventArgs^  e) {
+             }
+};
 }
-
-
