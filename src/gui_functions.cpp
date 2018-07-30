@@ -249,8 +249,8 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
     pthread_cond_broadcast(m_condPlayCond);  // send init command to threads
     pthread_mutex_unlock(m_mtxPlayStat);
 
-    openFileDialog1->ShowDialog();
-    mfilename = openFileDialog1->FileName;
+    openFileDialog->ShowDialog();
+    mfilename = openFileDialog->FileName;
     this->Text = L"VideoAnalyzer " + mfilename;
     va_log(LOGLEVEL_INFO, "Open File %s\n", (char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(mfilename));
 

@@ -90,6 +90,7 @@ System::Void readThreadProc(Object^ data)
     AVCodecContext *avctx;
     AVCodec* codec;
     AVPacket pkt1, *pkt = &pkt1;
+    AVPacket flush_pkt1, *flush_pkt = &flush_pkt1;
     int64_t stream_start_time;
     int64_t pkt_ts;
 
@@ -194,7 +195,16 @@ System::Void readThreadProc(Object^ data)
                 if((ret == AVERROR_EOF || avio_feof(fmtctx->pb))) // reach end of file
                 {
                     pl->eof = true;
+                    flush_pkt->data = NULL;
+                    flush_pkt->size = 0;
+                    packet_queue_put(&(pl->videoq), flush_pkt);
+                    va_log(LOGLEVEL_INFO, "readThread reached end of file, put null packet\n");
+                    break;
                 }
+                if(fmtctx->pb && fmtctx->pb->error)
+                    continue;
+                else
+                    continue;
             }
             stream_start_time = fmtctx->streams[pkt->stream_index]->start_time;
             pkt_ts = pkt->pts == AV_NOPTS_VALUE? pkt->dts: pkt->pts;
@@ -215,7 +225,7 @@ System::Void decodeThreadProc(Object^ data)
     int got_frame, ret = 0;
     PacketQueue* pq = &(mainForm->m_pl->videoq);
     FrameQueue*  fq = &(mainForm->m_pl->pictq);
-    int frame_pkt_bits = 0;
+    int frame_pkt_size = 0;
     while(1)
     {
         pthread_mutex_lock(mainForm->m_mtxPlayStat);
@@ -238,7 +248,7 @@ System::Void decodeThreadProc(Object^ data)
             myframe = picture_queue_get_write_picture(fq);
             if(myframe && ret >= 0)
             {
-                frame_pkt_bits += pkt->size;
+                frame_pkt_size += pkt->size;
                 do{
                     got_frame = 0;
                     ret = avcodec_decode_video2(pl->avctx, myframe->yuvframe, &got_frame, pkt);
@@ -252,8 +262,8 @@ System::Void decodeThreadProc(Object^ data)
                 {
                     myframe->yuvframe->pts = av_frame_get_best_effort_timestamp(myframe->yuvframe);
                     myframe->pts = (myframe->yuvframe->pts == AV_NOPTS_VALUE) ? NAN : myframe->yuvframe->pts * av_q2d(mainForm->m_pl->time_base);
-                    myframe->frame_pkt_bits = frame_pkt_bits;
-                    frame_pkt_bits = 0;
+                    myframe->frame_pkt_bits = frame_pkt_size * 8;
+                    frame_pkt_size = 0;
                     if(1)
                     {
                         va_log(LOGLEVEL_INFO, "Decode frame pts = %8d ms, sws_scale width, height = %d, %d\n", (int)(1000 * myframe->pts), myframe->rgbframe->width, myframe->rgbframe->height);
@@ -265,8 +275,23 @@ System::Void decodeThreadProc(Object^ data)
                     va_log(LOGLEVEL_FULL, "Decoded frame pts = %8d ms, %lld \n", (int)(1000 * myframe->pts), DateTime::Now.ToFileTime() / 10000);
                     picture_queue_write(fq);
                 }
+
+                if(pkt->data == NULL) // get flush pkt
+                {
+                    do{
+                        ret = avcodec_decode_video2(pl->avctx, myframe->yuvframe, &got_frame, pkt);
+                        if(ret < 0)
+                            break;
+                        if(got_frame)
+                        {
+                            // TODO: need to append these frames
+                        }
+                    }while(got_frame);
+                    va_log(LOGLEVEL_INFO, "decodeThread received null packet, end of file and exit thread\n");
+                    break; // exit decode thread
+                }
             }
-            av_packet_unref(pkt);
+            av_packet_unref(pkt); // release pkt buffer
         }
     }
 }

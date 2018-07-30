@@ -120,14 +120,14 @@
   <metadata name="menuStrip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
-  <metadata name="openFileDialog1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+  <metadata name="openFileDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>131, 15</value>
   </metadata>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="PlayButton.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAO
-        vgAADr4B6kKxwAAAAVBJREFUOE9jAAH/c269ofe8XwZe9pivkqsiAxYkFsh5ywkG3/X8G3LP6z8IB9/1
+        vQAADr0BR/uQrQAAAVBJREFUOE9jAAH/c269ofe8XwZe9pivkqsiAxYkFsh5ywkG3/X8G3LP6z8IB9/1
         +uJ50L5W3l6eA6oEP5DwkpAPuuv5HwPf8bxvs9QsFKoMNwAZEHjH/T8u7H/D7YB+vZYBVDkmABkQcMft
         Pz7sf9v1j+c5h5kqiRKiUG0IADLA77bLf2Kw7y2X9w7bzYsYjBlYodohBvjecgZKEo99bjnfMJ6kbQ03
         wPuW03+S8U3Hj+Ku4txgA7xuOvwnFXtesUcY4HHD/j8p2O283Q3tWjWEF9xv2P0nBrtdsnlvvtgQPRAF

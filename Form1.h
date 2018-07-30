@@ -106,8 +106,9 @@ namespace VideoAnalyzer {
     private: System::Windows::Forms::ToolStripMenuItem^  pSNRWindowToolStripMenuItem;
     private: System::Windows::Forms::ToolStripMenuItem^  aboutToolStripMenuItem;
     private: System::Windows::Forms::ToolStripMenuItem^  versionToolStripMenuItem;
+    private: System::Windows::Forms::OpenFileDialog^  openFileDialog;
 
-    private: System::Windows::Forms::OpenFileDialog^  openFileDialog1;
+
     private: System::Windows::Forms::Panel^  VideoInfoPannel;
     private: System::Windows::Forms::Label^  VideoInfoLabel;
 
@@ -153,7 +154,7 @@ namespace VideoAnalyzer {
             this->pSNRWindowToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
             this->aboutToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
             this->versionToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
-            this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
+            this->openFileDialog = (gcnew System::Windows::Forms::OpenFileDialog());
             this->VideoInfoPannel = (gcnew System::Windows::Forms::Panel());
             this->VideoInfoLabel = (gcnew System::Windows::Forms::Label());
             this->VideoPlaybackPannel = (gcnew System::Windows::Forms::Panel());
@@ -252,10 +253,12 @@ namespace VideoAnalyzer {
             this->versionToolStripMenuItem->Size = System::Drawing::Size(120, 22);
             this->versionToolStripMenuItem->Text = L"Version";
             // 
-            // openFileDialog1
+            // openFileDialog
             // 
-            this->openFileDialog1->FileName = L"openFileDialog1";
-            this->openFileDialog1->InitialDirectory = L"D:\\";
+            this->openFileDialog->FileName = L"openFileDialog";
+            this->openFileDialog->Filter = L"Video Ts (*.ts)|*.ts|Video mp4(*.mp4)|*.mp4|Video mkv(*.mkv)|*.mkv|Video avi(*.av" 
+                L"i)|*.avi|All files (*.*)|*.*";
+            this->openFileDialog->InitialDirectory = L"D:\\";
             // 
             // VideoInfoPannel
             // 
@@ -281,11 +284,6 @@ namespace VideoAnalyzer {
             // 
             // VideoPlaybackPannel
             // 
-            //this->DoubleBuffered = true;
-            //this->SetStyle(ControlStyles::UserPaint, true);
-            //this->SetStyle(ControlStyles::AllPaintingInWmPaint, true); 
-            //this->SetStyle(ControlStyles::DoubleBuffer, true);
-
             this->VideoPlaybackPannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
                 | System::Windows::Forms::AnchorStyles::Left) 
                 | System::Windows::Forms::AnchorStyles::Right));
@@ -379,6 +377,7 @@ namespace VideoAnalyzer {
             this->ControlPannel->ResumeLayout(false);
             this->ResumeLayout(false);
             this->PerformLayout();
+
         }
 #pragma endregion
     private: System::Void openToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e);
