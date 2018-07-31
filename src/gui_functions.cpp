@@ -95,6 +95,8 @@ Form1::Form1(void)
     m_videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
     PlayerInit();
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
+    msetBitRatePicBoxWidthDelegate = gcnew setBitRatePicBoxWidthDelegate(this, &Form1::setBitRatePicBoxWidthMethod);
+    msetBitRatePannelHScrollDelegate = gcnew setBitRatePannelHScrollDelegate(this, &Form1::setBRPannelHScrollMethod);
 
     this->SetStyle(static_cast<ControlStyles>(ControlStyles::DoubleBuffer | ControlStyles::UserPaint | ControlStyles::AllPaintingInWmPaint), true);
     this->UpdateStyles();
@@ -387,7 +389,8 @@ System::Void Form1::updateBitStat(int frameBits, int pts)
         int xOffset = VideoBitratePannel->HorizontalScroll->Value;
         if(m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth > xOffset + VideoBitratePannel->Width)
         {
-            VideoBitratePannel->HorizontalScroll->Value = m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth - VideoBitratePannel->Width / 2;
+            //VideoBitratePannel->HorizontalScroll->Value = m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth - VideoBitratePannel->Width / 2;
+            Invoke(msetBitRatePannelHScrollDelegate, m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth - VideoBitratePannel->Width / 2);
             System::Windows::Forms::PaintEventArgs^  e;
             VideoBitratePicBox_Paint(this, e);
         }

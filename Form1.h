@@ -97,6 +97,13 @@ namespace VideoAnalyzer {
 
         delegate void setVideoInfo(String^ str_res);
         setVideoInfo^ mSetVidInfDelegate;
+
+        delegate void setBitRatePicBoxWidthDelegate(Int32 w);
+        setBitRatePicBoxWidthDelegate^ msetBitRatePicBoxWidthDelegate;
+
+        delegate void setBitRatePannelHScrollDelegate(Int32 x);
+        setBitRatePannelHScrollDelegate^ msetBitRatePannelHScrollDelegate;
+
         void setVideoInfo2(String^ str_res)
         {
             mVideoInfo = str_res;
@@ -138,6 +145,14 @@ namespace VideoAnalyzer {
     public: System::Void setVideoInfoMethod(String^ str)
             {
                 VideoInfoLabel->Text = L"============Video Info============\n" + str;
+            }
+    public: System::Void setBitRatePicBoxWidthMethod(Int32 w)
+            {
+                VideoBitRatePicBox->Width = w;
+            }
+    public: System::Void setBRPannelHScrollMethod(Int32 x)
+            {
+                VideoBitratePannel->HorizontalScroll->Value = x;
             }
 
     protected: 
