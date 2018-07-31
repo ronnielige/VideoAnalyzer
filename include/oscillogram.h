@@ -1,6 +1,7 @@
 #ifndef _OSCILLOGRAM_H_
 #define _OSCILLOGRAM_H_
 
+#include "w32thread.h"
 using namespace System;
 using namespace System::ComponentModel;
 using namespace System::Collections;
@@ -27,12 +28,14 @@ public:
     int       mYMax;
     float     mYScale;
 
+    pthread_mutex_t* m_mtx;
+
 public:
     oscillogram(PictureBox^ picb, int w, int h);
     ~oscillogram();
 
     void addPoint(int xvalue, int yvalue);
-    void increadPixBoxWidth(int w);
+    void showPoints(int yArray[], int xStart, int numPoints);
 };
 
 #endif

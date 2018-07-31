@@ -171,9 +171,6 @@ System::Void Form1::VideoPlaybackPannel_Paint(System::Object^  sender, System::W
     }
 }
 
-int xt = 1;
-int yt = 100;
-
 System::Void Form1::VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
 {
     //Graphics^ g = VideoBitRatePicBox->CreateGraphics();
@@ -188,11 +185,23 @@ System::Void Form1::VideoBitratePannel_Paint(System::Object^  sender, System::Wi
     //    m_oscBitRate->increadPixBoxWidth(20);
 }
 
+System::Void Form1::VideoBitratePicBox_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
+{
+    Graphics^ g = VideoBitRatePicBox->CreateGraphics();
+    Int32 xStart = VideoBitratePannel->HorizontalScroll->Value / m_oscBitRate->mGridWidth * m_oscBitRate->mGridWidth;
+    int   xIdx = xStart / m_oscBitRate->mGridWidth;
+    int   numPoints = (m_bitStat->BitRateAIdx - xIdx) < 0? 0: min(m_bitStat->BitRateAIdx - xIdx, VideoBitratePannel->Width / m_oscBitRate->mGridWidth + 2);
+    g->Clear(Color::White);
+    drawGrid(g, xStart, VideoBitratePannel->Width + 2 * m_oscBitRate->mGridWidth, VideoBitRatePicBox->Height, 20, 0, 0);
+    m_oscBitRate->showPoints(m_bitStat->BitRateArray, max(0, xIdx - 1), numPoints);
+    delete g;
+}
+
 System::Void Form1::VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
 {
     Graphics^ g = VBVBufferPannel->CreateGraphics();
     g->Clear(Color::White);
-    drawGrid(g, VBVBufferPannel->Width, VBVBufferPannel->Height, 20, 20, 5);
+    drawGrid(g, 0, VBVBufferPannel->Width, VBVBufferPannel->Height, 20, 20, 5);
     delete g;
 }
 
@@ -223,14 +232,14 @@ System::Void Form1::setRenderArea()
     va_log(LOGLEVEL_INFO, "setRenderArea: VideoRenderWindiw Size (%4d, %4d); RenderArea: topleft = (%4d, %4d), Size = (%4d, %4d)\n", pannelWidth, pannelHeight, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
 }
 
-System::Void Form1::drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady)
+System::Void Form1::drawGrid(Graphics^ g, Int32 xOffset, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady)
 {
     Pen^ pen = gcnew Pen(Color::Gray, 1.0);
     Point^ tl = gcnew Point(); // top left position of drawing area
-    tl->X = ipadx;
+    tl->X = xOffset + ipadx;
     tl->Y = ipady;
     Point^ br = gcnew Point(); // bottom right position of drawing area
-    br->X = ipadx + (Width - ipadx) / GridSize * GridSize;
+    br->X = xOffset + ipadx + (Width - ipadx) / GridSize * GridSize;
     br->Y = ipady + (Height - ipady) / GridSize * GridSize;
     Point^ bl = gcnew Point(); // bottom left position of drawing area
     bl->X = tl->X;
@@ -275,6 +284,23 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
     PlayStat = PS_INIT;
     pthread_cond_broadcast(m_condPlayCond);  // send init command to threads
     pthread_mutex_unlock(m_mtxPlayStat);
+
+    pthread_mutex_lock(m_mtxPlayStat);
+    while(PlayStat == PS_INIT)
+        pthread_cond_wait(m_condPlayCond, m_mtxPlayStat); // wait until init finised
+    pthread_mutex_unlock(m_mtxPlayStat);
+
+    int duration_sec = (int)((m_pl->avftx->duration - m_pl->avftx->start_time) / AV_TIME_BASE) + 1;
+    VideoBitRatePicBox->Width = m_oscBitRate->mGridWidth * duration_sec;
+    if(m_pl->avftx->bit_rate)
+        m_oscBitRate->mYMax = (int)(m_pl->avftx->bit_rate / 1000) * 2;
+
+    setVideoInfoMethod(mVideoInfo);
+    //if(vcodecpar->bit_rate)
+    //{
+    //    VidInfoStr += L"\nVideo Bitrate:\n   " + (int)(vcodecpar->bit_rate / 1000) + " kbps\n";
+    //    mainForm->m_oscBitRate->mYMax = (int)(vcodecpar->bit_rate / 1000) * 2;
+    //}
 }
 
 System::Void Form1::StopButton_Click(System::Object^  sender, System::EventArgs^  e) 
@@ -289,11 +315,11 @@ System::Void Form1::StopButton_Click(System::Object^  sender, System::EventArgs^
 
 System::Void Form1::RenderFrame(void) // render thread calls
 {
-    Frame*     renderFrame  = picture_queue_get_read_picture(&(m_pl->pictq));
+    Frame* renderFrame = picture_queue_get_read_picture(&(m_pl->pictq));
     if(!renderFrame)
         return;
-    int       rgbFrmWidth   = renderFrame->rgbframe->width;
-    int      rgbFrmHeight   = renderFrame->rgbframe->height;
+    int    rgbFrmWidth = renderFrame->rgbframe->width;
+    int   rgbFrmHeight = renderFrame->rgbframe->height;
 
     updateBitStat(renderFrame->frame_pkt_bits, (int)(renderFrame->pts * 1000));
 
@@ -348,7 +374,24 @@ System::Void Form1::updateBitStat(int frameBits, int pts)
 
     m_bitStat->BitRateArray[m_bitStat->BitRateAIdx] += frameBits;
     if(pts - m_bitStat->last_pts >= 1000) // 1s
-    {
+    { 
+        Graphics^ g = VideoBitRatePicBox->CreateGraphics();
+        Int32 xStart = VideoBitratePannel->HorizontalScroll->Value / m_oscBitRate->mGridWidth * m_oscBitRate->mGridWidth;
+        int   xIdx = xStart / m_oscBitRate->mGridWidth;
+        //g->Clear(Color::White);
+        drawGrid(g, xStart, VideoBitratePannel->Width + 2* m_oscBitRate->mGridWidth, VideoBitRatePicBox->Height, 20, 0, 0);
+        //Graphics^ g = VideoBitRatePicBox->CreateGraphics();
+        //drawGrid(g, 0, VideoBitRatePicBox->Width, VideoBitRatePicBox->Height, 20, 0, 0);
+        //delete g;
+
+        int xOffset = VideoBitratePannel->HorizontalScroll->Value;
+        if(m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth > xOffset + VideoBitratePannel->Width)
+        {
+            VideoBitratePannel->HorizontalScroll->Value = m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth - VideoBitratePannel->Width / 2;
+            System::Windows::Forms::PaintEventArgs^  e;
+            VideoBitratePicBox_Paint(this, e);
+        }
+
         m_oscBitRate->addPoint(m_bitStat->BitRateAIdx, m_bitStat->BitRateArray[m_bitStat->BitRateAIdx] / 1000);
         m_bitStat->last_pts = pts;
         m_bitStat->BitRateAIdx++;

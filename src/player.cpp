@@ -151,16 +151,11 @@ System::Void readThreadProc(Object^ data)
                 pl->height = vcodecpar->height;
                 VidInfoStr += L"\nVideo Codec:\n   " + System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)codec->long_name) + "\n"; 
                 dump_format(fmtctx, st_index[AVMEDIA_TYPE_VIDEO], VidInfoStr);
-                if(fmtctx->bit_rate)
-                    mainForm->m_oscBitRate->mYMax = (int)(fmtctx->bit_rate / 1000) * 2;
-                if(vcodecpar->bit_rate)
-                {
-                    VidInfoStr += L"\nVideo Bitrate:\n   " + (int)(vcodecpar->bit_rate / 1000) + " kbps\n";
-                    mainForm->m_oscBitRate->mYMax = (int)(vcodecpar->bit_rate / 1000) * 2;
-                }
+
             }
 
-            mainForm->Invoke(mainForm->mSetVidInfDelegate, VidInfoStr);
+            //mainForm->Invoke(mainForm->mSetVidInfDelegate, VidInfoStr);
+            mainForm->setVideoInfo2(VidInfoStr);
 
             //mainForm->m_avcodec = codec;
             pl->avctx   = avctx;
@@ -325,7 +320,7 @@ System::Void renderThreadProc(Object^ data)
             mainForm->rendThStat = PS_PLAY;
             //va_log(LOGLEVEL_INFO, "RenderFrame Started\n");
             mainForm->RenderFrame();
-            Sleep(5);
+            Sleep(1);
             //va_log(LOGLEVEL_INFO, "RenderFrame Ended\n");
             //Sleep(mainForm->m_pl->frameInterval);
         }

@@ -5,8 +5,9 @@ oscillogram::oscillogram(PictureBox^ picb, int w, int h)
 {
     int actHeight = 0;
     mPicBox     = picb;
-    mGraphic   = mPicBox->CreateGraphics();
-    mPen       = gcnew Pen(Color::Red, 2.0);
+    m_mtx       = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+    mPen        = gcnew Pen(Color::Red, 2.0);
+    pthread_mutex_init(m_mtx, NULL);
     mGraWidth  = w;
     mGraHeight = h;
     mGridWidth = 20;
@@ -31,21 +32,49 @@ oscillogram::oscillogram(PictureBox^ picb, int w, int h)
 
 oscillogram::~oscillogram()
 {
-    delete mGraphic;
+    pthread_mutex_destroy(m_mtx);
 }
 
 void oscillogram::addPoint(int xValue, int yValue)
 {
     int xPos = xValue * mGridWidth;
     int yPos = mBlP.Y - (int)(yValue * mYScale);
-    mGraphic->DrawLine(mPen, mLastP.X, mLastP.Y, xPos, yPos);
+
+    pthread_mutex_lock(m_mtx);
+    if(mLastP.Y > 0)
+    {
+        mGraphic = mPicBox->CreateGraphics();
+        mGraphic->DrawLine(mPen, mLastP.X, mLastP.Y, xPos, yPos);
+        delete mGraphic;
+    }
     mLastP.X = xPos;
     mLastP.Y = yPos;
-    if(mPicBox->Width < xPos)
-        mPicBox->Width = xPos + mGridWidth * 10;
+    pthread_mutex_unlock(m_mtx);
 }
 
-void oscillogram::increadPixBoxWidth(int w)
+void oscillogram::showPoints(int* yArray, int xStart, int numPoints)
 {
-    mPicBox->Width += w;
+    int cnt = 0;
+    int xPos, yPos;
+    xPos = xStart * mGridWidth;
+
+    pthread_mutex_lock(m_mtx);
+    mLastP.Y = 0;
+    mGraphic = mPicBox->CreateGraphics();
+    //mGraphic->Clear(Color::White);
+
+    while(cnt < numPoints)
+    {
+        xPos += mGridWidth;
+        yPos = mBlP.Y - (int)(yArray[xStart + cnt] * mYScale / 1000);
+
+        if(mLastP.Y > 0)
+            mGraphic->DrawLine(mPen, mLastP.X, mLastP.Y, xPos, yPos);
+
+        mLastP.X = xPos;
+        mLastP.Y = yPos;
+        cnt++;
+    }
+    delete mGraphic;
+    pthread_mutex_unlock(m_mtx);
 }

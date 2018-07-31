@@ -85,15 +85,22 @@ namespace VideoAnalyzer {
 
         oscillogram^ m_oscBitRate;
 
+        String^ mVideoInfo;
+
         Int32 m_renderTlx;
         Int32 m_renderTly;
         Int32 m_renderAreaWidth;
         Int32 m_renderAreaHeight;
-    private: System::Windows::Forms::PictureBox^  VideoBitRatePicBox;
+
+    public: System::Windows::Forms::PictureBox^  VideoBitRatePicBox;
     public: 
 
         delegate void setVideoInfo(String^ str_res);
         setVideoInfo^ mSetVidInfDelegate;
+        void setVideoInfo2(String^ str_res)
+        {
+            mVideoInfo = str_res;
+        }
 
     protected:
         /// <summary>
@@ -325,9 +332,11 @@ namespace VideoAnalyzer {
             this->VideoBitRatePicBox->Location = System::Drawing::Point(3, 3);
             this->VideoBitRatePicBox->Name = L"VideoBitRatePicBox";
             this->VideoBitRatePicBox->Size = System::Drawing::Size(395, 155);
+            this->VideoBitRatePicBox->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
             this->VideoBitRatePicBox->TabIndex = 0;
             this->VideoBitRatePicBox->TabStop = false;
             this->VideoBitRatePicBox->Click += gcnew System::EventHandler(this, &Form1::VideoBitRatePicBox_Click);
+            this->VideoBitRatePicBox->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &Form1::VideoBitratePicBox_Paint);
             // 
             // VBVBufferPannel
             // 
@@ -396,6 +405,7 @@ namespace VideoAnalyzer {
             this->VideoInfoPannel->ResumeLayout(false);
             this->VideoInfoPannel->PerformLayout();
             this->VideoBitratePannel->ResumeLayout(false);
+            this->VideoBitratePannel->PerformLayout();
             (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->VideoBitRatePicBox))->EndInit();
             this->ControlPannel->ResumeLayout(false);
             this->ResumeLayout(false);
@@ -406,9 +416,10 @@ namespace VideoAnalyzer {
     private: System::Void openToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e);
     private: System::Void VideoPlaybackPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
     private: System::Void VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
+    private: System::Void VideoBitratePicBox_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
     private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
     public:  System::Void setRenderArea();
-    private: System::Void drawGrid(Graphics^ g, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady);
+    private: System::Void drawGrid(Graphics^ g, Int32 xOffset, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady);
     public:  System::Void RenderFrame(void);
     public:  System::Void updateBitStat(int frameBits, int pts); 
     //public:  System::Void SetPlayStartTime(void);
