@@ -3,7 +3,6 @@
 
 oscillogram::oscillogram(PictureBox^ picb, int w, int h)
 {
-    int actHeight = 0;
     mPicBox     = picb;
     m_mtx       = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
     mPen        = gcnew Pen(Color::Red, 2.0);
@@ -17,7 +16,7 @@ oscillogram::oscillogram(PictureBox^ picb, int w, int h)
 
     mBlP.X = 0;
     mBlP.Y = mGraHeight / mGridWidth * mGridWidth; 
-    actHeight = mBlP.Y - mTlP.Y;
+    mactHeight = mBlP.Y - mTlP.Y;
 
     mBrP.X = mGraWidth / mGridWidth * mGridWidth;
     mBrP.Y = mBlP.Y;
@@ -26,7 +25,7 @@ oscillogram::oscillogram(PictureBox^ picb, int w, int h)
     mLastP.Y = 0;
 
     mYMax = 10000;
-    mYScale = (float)actHeight / mYMax;
+    mYScale = (float)mactHeight / mYMax;
     //mPen->DashStyle = DashStyle::DashStyleSolid;
 }
 

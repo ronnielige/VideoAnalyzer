@@ -26,6 +26,7 @@ public:
 
     int       mGridWidth;
     int       mYMax;
+    int       mactHeight;
     float     mYScale;
 
     pthread_mutex_t* m_mtx;

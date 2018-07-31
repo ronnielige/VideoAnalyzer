@@ -193,7 +193,7 @@ System::Void Form1::VideoBitratePicBox_Paint(System::Object^  sender, System::Wi
     Int32 xStart = VideoBitratePannel->HorizontalScroll->Value / m_oscBitRate->mGridWidth * m_oscBitRate->mGridWidth;
     int   xIdx = xStart / m_oscBitRate->mGridWidth;
     int   numPoints = (m_bitStat->BitRateAIdx - xIdx) < 0? 0: min(m_bitStat->BitRateAIdx - xIdx, VideoBitratePannel->Width / m_oscBitRate->mGridWidth + 2);
-    g->Clear(Color::White);
+    //g->Clear(Color::White);
     drawGrid(g, xStart, VideoBitratePannel->Width + 2 * m_oscBitRate->mGridWidth, VideoBitRatePicBox->Height, 20, 0, 0);
     m_oscBitRate->showPoints(m_bitStat->BitRateArray, max(0, xIdx - 1), numPoints);
     delete g;
@@ -295,7 +295,10 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
     int duration_sec = (int)((m_pl->avftx->duration - m_pl->avftx->start_time) / AV_TIME_BASE) + 1;
     VideoBitRatePicBox->Width = m_oscBitRate->mGridWidth * duration_sec;
     if(m_pl->avftx->bit_rate)
+    {
         m_oscBitRate->mYMax = (int)(m_pl->avftx->bit_rate / 1000) * 2;
+        m_oscBitRate->mYScale = (float)m_oscBitRate->mactHeight / m_oscBitRate->mYMax;
+    }
 
     setVideoInfoMethod(mVideoInfo);
     //if(vcodecpar->bit_rate)
@@ -392,6 +395,9 @@ System::Void Form1::updateBitStat(int frameBits, int pts)
             //VideoBitratePannel->HorizontalScroll->Value = m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth - VideoBitratePannel->Width / 2;
             Invoke(msetBitRatePannelHScrollDelegate, m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth - VideoBitratePannel->Width / 2);
             System::Windows::Forms::PaintEventArgs^  e;
+            Graphics^ g = VideoBitRatePicBox->CreateGraphics();
+            g->Clear(Color::White);
+            delete g;
             VideoBitratePicBox_Paint(this, e);
         }
 
