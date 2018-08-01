@@ -55,7 +55,7 @@ void oscillogram::showPoints(int* yArray, int xStart, int numPoints)
 {
     int cnt = 0;
     int xPos, yPos;
-    xPos = xStart * mGridWidth;
+    int xPosOffset = xStart * mGridWidth;
 
     pthread_mutex_lock(m_mtx);
     mLastP.Y = 0;
@@ -64,7 +64,7 @@ void oscillogram::showPoints(int* yArray, int xStart, int numPoints)
 
     while(cnt < numPoints)
     {
-        xPos += mGridWidth;
+        xPos = xPosOffset + cnt * mGridWidth;
         yPos = mBlP.Y - (int)(yArray[xStart + cnt] * mYScale / 1000);
 
         if(mLastP.Y > 0)

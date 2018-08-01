@@ -418,5 +418,12 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
     pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
     pthread_mutex_unlock(m_mtxPlayStat);
 
+    m_videoPlayGraphic->Clear(BackColor);
+    Graphics^ g = VideoBitRatePicBox->CreateGraphics();
+    g->Clear(BackColor);
+    delete g;
+
+    m_bitStat->FrameBitsAIdx = m_bitStat->BitRateAIdx = 0;
+
     va_log(LOGLEVEL_INFO, "Start to Play\n");
 }
