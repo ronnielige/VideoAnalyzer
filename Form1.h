@@ -77,7 +77,6 @@ namespace VideoAnalyzer {
         Int32 decThStat;
         Int32 rendThStat;
         VideoPlayer* m_pl;
-        BitsStat*    m_bitStat;
         BitStat*     m_CBitRateStat;
         BitStat*     m_CFrameBitsStat;
         Bitmap^      m_rpic; // render picture
