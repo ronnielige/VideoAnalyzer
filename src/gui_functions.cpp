@@ -195,7 +195,7 @@ System::Void Form1::VideoBitratePicBox_Paint(System::Object^  sender, System::Wi
     int   numPoints = (m_bitStat->BitRateAIdx - xIdx) < 0? 0: min(m_bitStat->BitRateAIdx - xIdx, VideoBitratePannel->Width / m_oscBitRate->mGridWidth + 2);
     //g->Clear(Color::White);
     drawGrid(g, xStart, VideoBitratePannel->Width + 2 * m_oscBitRate->mGridWidth, VideoBitRatePicBox->Height, 20, 0, 0);
-    m_oscBitRate->showPoints(m_bitStat->BitRateArray, max(0, xIdx - 1), numPoints);
+    m_oscBitRate->showPoints(m_bitStat->BitRateArray, max(0, xIdx - 1), numPoints + 1);
     delete g;
 }
 
@@ -300,6 +300,15 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
         m_oscBitRate->mYMax = (int)(m_pl->avftx->bit_rate / 1000) * 2;
         m_oscBitRate->mYScale = (float)m_oscBitRate->mactHeight / m_oscBitRate->mYMax;
     }
+
+    memset(m_bitStat->BitRateArray, 0, sizeof(int) * m_bitStat->BitRateAIdx);
+    m_bitStat->FrameBitsAIdx = m_bitStat->BitRateAIdx = 0;
+
+    m_videoPlayGraphic->Clear(BackColor);
+    Graphics^ g = VideoBitRatePicBox->CreateGraphics();
+    g->Clear(BackColor);
+    delete g;
+    setBRPannelHScrollMethod(0);
 
     setVideoInfoMethod(mVideoInfo);
     //if(vcodecpar->bit_rate)
@@ -417,13 +426,6 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
     PlayStat = PS_PLAY;
     pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
     pthread_mutex_unlock(m_mtxPlayStat);
-
-    m_videoPlayGraphic->Clear(BackColor);
-    Graphics^ g = VideoBitRatePicBox->CreateGraphics();
-    g->Clear(BackColor);
-    delete g;
-
-    m_bitStat->FrameBitsAIdx = m_bitStat->BitRateAIdx = 0;
 
     va_log(LOGLEVEL_INFO, "Start to Play\n");
 }

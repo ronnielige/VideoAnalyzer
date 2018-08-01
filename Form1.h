@@ -152,7 +152,9 @@ namespace VideoAnalyzer {
             }
     public: System::Void setBRPannelHScrollMethod(Int32 x)
             {
-                VideoBitratePannel->HorizontalScroll->Value = x;
+                Point p(x, 0);
+                //VideoBitratePannel->HorizontalScroll->Value = x;
+                VideoBitratePannel->AutoScrollPosition = p;
             }
 
     protected: 
