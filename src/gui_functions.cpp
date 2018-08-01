@@ -135,7 +135,7 @@ System::Void Form1::VideoPlaybackPannel_Paint(System::Object^  sender, System::W
 
     delete m_videoPlayGraphic;
     m_videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
-    m_videoPlayGraphic->Clear(Color::White);
+    m_videoPlayGraphic->Clear(BackColor);
     setRenderArea();
 
     if(m_doscale)
@@ -202,7 +202,7 @@ System::Void Form1::VideoBitratePicBox_Paint(System::Object^  sender, System::Wi
 System::Void Form1::VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
 {
     Graphics^ g = VBVBufferPannel->CreateGraphics();
-    g->Clear(Color::White);
+    g->Clear(BackColor);
     drawGrid(g, 0, VBVBufferPannel->Width, VBVBufferPannel->Height, 20, 20, 5);
     delete g;
 }
@@ -258,12 +258,13 @@ System::Void Form1::drawGrid(Graphics^ g, Int32 xOffset, Int32 Width, Int32 Heig
     for(Int32 i = tl->Y; i <= br->Y; i += GridSize)
         g->DrawLine(pen, tl->X, i, br->X, i);
 
+    g->DrawLine(pen, tl->X, tl->Y, bl->X, bl->Y);
+    g->DrawLine(pen, tr->X, tr->Y, br->X, br->Y);
+
     pen->Width = 2.0;
     pen->DashStyle = DashStyle::Solid;
     g->DrawLine(pen, tl->X, tl->Y, tr->X, tr->Y);
-    g->DrawLine(pen, tl->X, tl->Y, bl->X, bl->Y);
     g->DrawLine(pen, bl->X, bl->Y, br->X, br->Y);
-    g->DrawLine(pen, tr->X, tr->Y, br->X, br->Y);
 }
 
 System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) 
@@ -396,7 +397,7 @@ System::Void Form1::updateBitStat(int frameBits, int pts)
             Invoke(msetBitRatePannelHScrollDelegate, m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth - VideoBitratePannel->Width / 2);
             System::Windows::Forms::PaintEventArgs^  e;
             Graphics^ g = VideoBitRatePicBox->CreateGraphics();
-            g->Clear(Color::White);
+            g->Clear(BackColor);
             delete g;
             VideoBitratePicBox_Paint(this, e);
         }
