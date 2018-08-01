@@ -6,6 +6,7 @@
 #include "w32thread.h"
 #include "queue.h"
 #include "oscillogram.h"
+#include "bitstat.h"
 
 enum 
 {
@@ -77,6 +78,8 @@ namespace VideoAnalyzer {
         Int32 rendThStat;
         VideoPlayer* m_pl;
         BitsStat*    m_bitStat;
+        BitStat*     m_CBitRateStat;
+        BitStat*     m_CFrameBitsStat;
         Bitmap^      m_rpic; // render picture
 
         bool m_doscale;  // resize rgbframe to render window size by ourself

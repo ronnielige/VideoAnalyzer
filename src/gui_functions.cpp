@@ -25,6 +25,9 @@ void Form1::PlayerInit()
     m_bitStat->FrameBitsArray = (int *)malloc(sizeof(int) * m_bitStat->FrameBitsASize);
     memset(m_bitStat->BitRateArray, 0, sizeof(int) * m_bitStat->BitRateASize);
 
+    m_CBitRateStat   = new BitStat(1000);
+    m_CFrameBitsStat = new BitStat(25000);
+
     packet_queue_init(&(m_pl->videoq));
     picture_queue_init(&(m_pl->pictq));
 
@@ -74,6 +77,11 @@ void Form1::PlayerExit()
     if(m_bitStat->FrameBitsArray)
         free(m_bitStat->FrameBitsArray);
     free(m_bitStat);
+
+    if(m_CBitRateStat)
+        delete m_CBitRateStat;
+    if(m_CFrameBitsStat)
+        delete m_CFrameBitsStat;
 
     pthread_mutex_destroy(m_mtxPlayStat);
     pthread_cond_destroy(m_condPlayCond);
@@ -175,16 +183,6 @@ System::Void Form1::VideoPlaybackPannel_Paint(System::Object^  sender, System::W
 
 System::Void Form1::VideoBitratePannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
 {
-    //Graphics^ g = VideoBitRatePicBox->CreateGraphics();
-    ////g->Clear(Color::White);
-    //drawGrid(g, VideoBitRatePicBox->Width, VideoBitRatePicBox->Height, 20, 0, 0);
-    //delete g;
-    //m_oscBitRate->addPoint(xt, yt);
-    //xt++;
-    //yt += 300;
-
-    //if(xt % 10 == 0)
-    //    m_oscBitRate->increadPixBoxWidth(20);
 }
 
 System::Void Form1::VideoBitratePicBox_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
@@ -192,10 +190,18 @@ System::Void Form1::VideoBitratePicBox_Paint(System::Object^  sender, System::Wi
     Graphics^ g = VideoBitRatePicBox->CreateGraphics();
     Int32 xStart = VideoBitratePannel->HorizontalScroll->Value / m_oscBitRate->mGridWidth * m_oscBitRate->mGridWidth;
     int   xIdx = xStart / m_oscBitRate->mGridWidth;
-    int   numPoints = (m_bitStat->BitRateAIdx - xIdx) < 0? 0: min(m_bitStat->BitRateAIdx - xIdx, VideoBitratePannel->Width / m_oscBitRate->mGridWidth + 2);
-    //g->Clear(Color::White);
+
+    // =================== old ========================
+    //int   numPoints = (m_bitStat->BitRateAIdx - xIdx) < 0? 0: min(m_bitStat->BitRateAIdx - xIdx, VideoBitratePannel->Width / m_oscBitRate->mGridWidth + 2);
+    ////g->Clear(Color::White);
+    //drawGrid(g, xStart, VideoBitratePannel->Width + 2 * m_oscBitRate->mGridWidth, VideoBitRatePicBox->Height, 20, 0, 0);
+    //m_oscBitRate->showPoints(m_bitStat->BitRateArray, max(0, xIdx - 1), numPoints + 1);
+    //delete g;
+
+    // =================== new =====================
+    int   numPoints = (m_CBitRateStat->getNewstAIdx() - xIdx) < 0? 0: min(m_CBitRateStat->getNewstAIdx() - xIdx, VideoBitratePannel->Width / m_oscBitRate->mGridWidth + 2);
     drawGrid(g, xStart, VideoBitratePannel->Width + 2 * m_oscBitRate->mGridWidth, VideoBitRatePicBox->Height, 20, 0, 0);
-    m_oscBitRate->showPoints(m_bitStat->BitRateArray, max(0, xIdx - 1), numPoints + 1);
+    m_oscBitRate->showPoints(m_CBitRateStat->getArray(), max(0, xIdx - 1), numPoints + 1);
     delete g;
 }
 
@@ -295,6 +301,7 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
 
     int duration_sec = (int)((m_pl->avftx->duration - m_pl->avftx->start_time) / AV_TIME_BASE) + 1;
     VideoBitRatePicBox->Width = m_oscBitRate->mGridWidth * duration_sec;
+    //m_CBitRateStat->updateLastPts((int)1000 * (m_pl->avftx->start_time) / AV_TIME_BASE);
     if(m_pl->avftx->bit_rate)
     {
         m_oscBitRate->mYMax = (int)(m_pl->avftx->bit_rate / 1000) * 2;
@@ -303,6 +310,9 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
 
     memset(m_bitStat->BitRateArray, 0, sizeof(int) * m_bitStat->BitRateAIdx);
     m_bitStat->FrameBitsAIdx = m_bitStat->BitRateAIdx = 0;
+
+    m_CBitRateStat->reset();
+    m_CFrameBitsStat->reset();
 
     m_videoPlayGraphic->Clear(BackColor);
     Graphics^ g = VideoBitRatePicBox->CreateGraphics();
@@ -364,6 +374,7 @@ System::Void Form1::RenderFrame(void) // render thread calls
 
 System::Void Form1::updateBitStat(int frameBits, int pts)
 {
+    // ================== old ==================
     if(m_bitStat->FrameBitsAIdx == m_bitStat->FrameBitsASize - 1)
     {
         int* old_array = m_bitStat->FrameBitsArray;
@@ -384,31 +395,56 @@ System::Void Form1::updateBitStat(int frameBits, int pts)
         free(old_array);
     }
 
-    m_bitStat->FrameBitsArray[m_bitStat->FrameBitsAIdx++] = frameBits;
-    m_bitStat->cur_pts = pts;
-
-    m_bitStat->BitRateArray[m_bitStat->BitRateAIdx] += frameBits;
-    if(pts - m_bitStat->last_pts >= 1000) // 1s
-    { 
+    // ================== new ===================
+    m_CFrameBitsStat->appendItem(frameBits, pts);
+    m_CBitRateStat->accumItem(frameBits, pts);
+    if(m_CBitRateStat->getAccumInterval() >= 1000) // 1s
+    {
         Graphics^ g = VideoBitRatePicBox->CreateGraphics();
         Int32 xStart = VideoBitratePannel->HorizontalScroll->Value / m_oscBitRate->mGridWidth * m_oscBitRate->mGridWidth;
         int   xIdx = xStart / m_oscBitRate->mGridWidth;
-        //g->Clear(Color::White);
         drawGrid(g, xStart, VideoBitratePannel->Width + 2* m_oscBitRate->mGridWidth, VideoBitRatePicBox->Height, 20, 0, 0);
-        //Graphics^ g = VideoBitRatePicBox->CreateGraphics();
-        //drawGrid(g, 0, VideoBitRatePicBox->Width, VideoBitRatePicBox->Height, 20, 0, 0);
-        //delete g;
 
         int xOffset = VideoBitratePannel->HorizontalScroll->Value;
-        if(m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth > xOffset + VideoBitratePannel->Width)
+        int targetX = m_CBitRateStat->getNewstAIdx() * m_oscBitRate->mGridWidth;
+        if(targetX - xOffset > VideoBitratePannel->Width) // reached right boundary, need to scroll left 
         {
             //VideoBitratePannel->HorizontalScroll->Value = m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth - VideoBitratePannel->Width / 2;
-            Invoke(msetBitRatePannelHScrollDelegate, m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth - VideoBitratePannel->Width / 2);
+            Invoke(msetBitRatePannelHScrollDelegate, targetX - VideoBitratePannel->Width / 2); // reached right boundary, need to scroll right
             System::Windows::Forms::PaintEventArgs^  e;
             Graphics^ g = VideoBitRatePicBox->CreateGraphics();
             g->Clear(BackColor);
             delete g;
             VideoBitratePicBox_Paint(this, e);
+        }
+
+        m_oscBitRate->addPoint(m_CBitRateStat->getNewstAIdx(), m_CBitRateStat->getNewstValue() / 1000); // bitrate(kbps)
+        m_CBitRateStat->updateLastPts(pts);
+        m_CBitRateStat->incArrIdx();
+    }
+
+    // ====================== old ====================
+    m_bitStat->FrameBitsArray[m_bitStat->FrameBitsAIdx++] = frameBits;
+    m_bitStat->cur_pts = pts;
+    m_bitStat->BitRateArray[m_bitStat->BitRateAIdx] += frameBits;
+
+    if(pts - m_bitStat->last_pts >= 1000) // 1s
+    { 
+        Graphics^ g = VideoBitRatePicBox->CreateGraphics();
+        Int32 xStart = VideoBitratePannel->HorizontalScroll->Value / m_oscBitRate->mGridWidth * m_oscBitRate->mGridWidth;
+        int   xIdx = xStart / m_oscBitRate->mGridWidth;
+        //drawGrid(g, xStart, VideoBitratePannel->Width + 2* m_oscBitRate->mGridWidth, VideoBitRatePicBox->Height, 20, 0, 0);
+
+
+        int xOffset = VideoBitratePannel->HorizontalScroll->Value;
+        if(m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth > xOffset + VideoBitratePannel->Width) // reached right boundary, need to scroll right
+        {
+            //Invoke(msetBitRatePannelHScrollDelegate, m_bitStat->BitRateAIdx * m_oscBitRate->mGridWidth - VideoBitratePannel->Width / 2);
+            //System::Windows::Forms::PaintEventArgs^  e;
+            //Graphics^ g = VideoBitRatePicBox->CreateGraphics();
+            //g->Clear(BackColor);
+            //delete g;
+            //VideoBitratePicBox_Paint(this, e);
         }
 
         m_oscBitRate->addPoint(m_bitStat->BitRateAIdx, m_bitStat->BitRateArray[m_bitStat->BitRateAIdx] / 1000);

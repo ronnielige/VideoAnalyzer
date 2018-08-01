@@ -95,6 +95,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\AssemblyInfo.cpp" />
+    <ClCompile Include="..\src\bitstat.cpp" />
     <ClCompile Include="..\src\gui_functions.cpp" />
     <ClCompile Include="..\src\log.cpp" />
     <ClCompile Include="..\src\oscillogram.cpp" />
@@ -110,6 +111,7 @@
     <ClInclude Include="..\Form1.h">
       <FileType>CppForm</FileType>
     </ClInclude>
+    <ClInclude Include="..\include\bitstat.h" />
     <ClInclude Include="..\include\libavcodec\ac3_parser.h" />
     <ClInclude Include="..\include\libavcodec\adts_parser.h" />
     <ClInclude Include="..\include\libavcodec\avcodec.h" />
