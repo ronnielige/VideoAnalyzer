@@ -7,10 +7,9 @@
 enum 
 {
     PS_NONE  = 0,
-    PS_INIT  = 1,
-    PS_PLAY  = 2,
-    PS_PAUSE = 3,
-    PS_EXIT  = 4,
+    PS_PLAY  = 1,
+    PS_PAUSE = 2,
+    PS_EXIT  = 3,
 };
 
 class VideoPlayer{

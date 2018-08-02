@@ -371,7 +371,7 @@ void* VideoPlayer::decodeThread(void* v)
             pl->m_iDecThStat = PS_PLAY;
             ret = packet_queue_get(pq, pkt);
             myframe = picture_queue_get_write_picture(fq);
-            if(myframe && ret >= 0)
+            if(myframe && ret >= 0 && pkt->data)
             {
                 frame_pkt_size += pkt->size;
                 do{
