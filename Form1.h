@@ -4,45 +4,9 @@
 #include<windows.h>
 #include<string>
 #include "w32thread.h"
-#include "queue.h"
 #include "oscillogram.h"
 #include "bitstat.h"
-
-enum 
-{
-    PS_NONE  = 0,
-    PS_INIT  = 1,
-    PS_PLAY  = 2,
-    PS_PAUSE = 3,
-    PS_EXIT  = 4,
-};
-
-typedef struct VideoPlayer{
-    AVFormatContext* avftx;
-    AVCodecContext* avctx;
-    PacketQueue     videoq;  // video packet queue
-    FrameQueue      pictq;   // video decoded frame queue 
-    struct SwsContext *sws_ctx;
-    int             frameInterval; // time interval between two frames
-    AVRational      time_base;
-    int             width;
-    int             height;
-    long long       playStartTime;  // ms
-    long long       playPauseTime;
-    int eof;
-} VideoPlayer;
-
-typedef struct BitsStat{
-    int* FrameBitsArray;
-    int  FrameBitsAIdx;
-    int  FrameBitsASize;
-    int* BitRateArray;
-    int  BitRateAIdx;
-    int  BitRateASize;
-    int  cur_pts;
-    int  last_pts;
-}BitsStat;
-
+#include "player.h"
 
 namespace VideoAnalyzer {
     using namespace System;
@@ -55,7 +19,6 @@ namespace VideoAnalyzer {
     using namespace System::Drawing::Imaging;
     using namespace System::Threading;
 
-
     /// <summary>
     /// Summary for Form1
     /// </summary>
@@ -64,28 +27,16 @@ namespace VideoAnalyzer {
     public:
         System::String^ mfilename;  // input filename
         Form1(void);
-        void PlayerInit();
-        void PlayerExit();
-        Int32 PlayStat;
-        static pthread_mutex_t* m_mtxPlayStat;
-        static pthread_cond_t*  m_condPlayCond;
-        Thread^ readThread;
-        Thread^ decThread;
-        Thread^ rendThread;
-
-        Int32 readThStat;
-        Int32 decThStat;
-        Int32 rendThStat;
-        VideoPlayer* m_pl;
-        BitStat*     m_CBitRateStat;
-        BitStat*     m_CFrameBitsStat;
+        
         Bitmap^      m_rpic; // render picture
-
-        bool m_doscale;  // resize rgbframe to render window size by ourself
-
-        Graphics^ m_videoPlayGraphic;
-
+        bool         m_doscale;  // resize rgbframe to render window size by ourself
+        Graphics^    m_videoPlayGraphic;
         oscillogram^ m_oscBitRate;
+
+        VideoPlayer* m_CPlayer;
+        BitStat*     m_CBitRateStat;   // stat bitrate per second
+        BitStat*     m_CFrameBitsStat; // stat frame bit
+        Thread^      rendThread;
 
         String^ mVideoInfo;
 
@@ -105,11 +56,6 @@ namespace VideoAnalyzer {
 
         delegate void setBitRatePannelHScrollDelegate(Int32 x);
         setBitRatePannelHScrollDelegate^ msetBitRatePannelHScrollDelegate;
-
-        void setVideoInfo2(String^ str_res)
-        {
-            mVideoInfo = str_res;
-        }
 
     protected:
         /// <summary>
@@ -439,7 +385,6 @@ namespace VideoAnalyzer {
     private: System::Void VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e);
     public:  System::Void setRenderArea();
     private: System::Void drawGrid(Graphics^ g, Int32 xOffset, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady);
-    public:  System::Void RenderFrame(void);
     public:  System::Void updateBitStat(int frameBits, int pts); 
     //public:  System::Void SetPlayStartTime(void);
     //public:  System::Void SetPlayPauseTime(void);

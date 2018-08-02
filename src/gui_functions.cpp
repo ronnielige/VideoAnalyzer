@@ -5,64 +5,6 @@
 #include "log.h"
 using namespace VideoAnalyzer;
 
-void Form1::PlayerInit()
-{
-    m_pl = (VideoPlayer*)malloc(sizeof(VideoPlayer));
-    if(m_pl == NULL)
-        return;
-    m_pl->frameInterval = 40; // default assume video fps = 25, then frame interval = 40 ms
-    m_pl->width = 1280;
-    m_pl->height = 720;
-    m_pl->sws_ctx = NULL;
-    m_pl->playPauseTime = m_pl->playPauseTime = 0;
-    m_pl->avftx = avformat_alloc_context(); // init avformat context
-    m_pl->eof = false;
-
-    m_CBitRateStat   = new BitStat(1000);
-    m_CFrameBitsStat = new BitStat(25000);
-
-    packet_queue_init(&(m_pl->videoq));
-    picture_queue_init(&(m_pl->pictq));
-
-    readThread = gcnew Thread(gcnew ParameterizedThreadStart(&readThreadProc));
-    readThread->Start(this);
-
-    decThread = gcnew Thread(gcnew ParameterizedThreadStart(&decodeThreadProc));
-    decThread->Start(this);
-
-    rendThread = gcnew Thread(gcnew ParameterizedThreadStart(&renderThreadProc));
-    rendThread->Start(this);
-}
-
-void Form1::PlayerExit()
-{
-    if(m_pl)
-    {
-        packet_queue_abort(&(m_pl->videoq), true);
-        picture_queue_abort(&(m_pl->pictq), true);
-
-        readThread->Join();   // wait read   thread to finish
-        decThread->Join();    // wait decode thread to finish
-        rendThread->Join();   // wait render thread to finish
-
-        if(m_pl->avftx)
-            avformat_close_input(&m_pl->avftx);
-
-        if(m_pl->sws_ctx)
-            sws_freeContext(m_pl->sws_ctx);
-
-        packet_queue_destory(&(m_pl->videoq));
-        picture_queue_destory(&(m_pl->pictq));
-        free(m_pl);
-
-        if(m_CBitRateStat)
-            delete m_CBitRateStat;
-        if(m_CFrameBitsStat)
-            delete m_CFrameBitsStat;
-
-    }
-}
-
 Form1::Form1(void)
 {
     InitializeComponent();
@@ -75,15 +17,10 @@ Form1::Form1(void)
     m_renderAreaHeight = VideoPlaybackPannel->Height;
 
     m_videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
-    m_pl = NULL;
+    m_CPlayer = NULL;
+    m_CBitRateStat   = new BitStat(1000);
+    m_CFrameBitsStat = new BitStat(25000);
 
-    m_mtxPlayStat  = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
-    m_condPlayCond = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
-    PlayStat = PS_NONE;    // init Player Stat 
-    pthread_mutex_init(m_mtxPlayStat, NULL);
-    pthread_cond_init(m_condPlayCond, NULL);
-
-    //PlayerInit();
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
     msetBitRatePicBoxWidthDelegate = gcnew setBitRatePicBoxWidthDelegate(this, &Form1::setBitRatePicBoxWidthMethod);
     msetBitRatePannelHScrollDelegate = gcnew setBitRatePannelHScrollDelegate(this, &Form1::setBRPannelHScrollMethod);
@@ -96,19 +33,19 @@ Form1::Form1(void)
 
 Form1::~Form1()
 {
-    pthread_mutex_lock(m_mtxPlayStat);
-    PlayStat = PS_EXIT;
-    pthread_cond_broadcast(m_condPlayCond);  // send exit to threads
-    pthread_mutex_unlock(m_mtxPlayStat);
+    if(m_CBitRateStat)
+        delete m_CBitRateStat;
+    if(m_CFrameBitsStat)
+        delete m_CFrameBitsStat;
 
-    PlayerExit();
+    if(m_CPlayer)
+    {
+        m_CPlayer->PlayerExit();
+        rendThread->Join();  // wait render thread exit first and then delete player
+        delete m_CPlayer;
+    }
+ 
     delete m_videoPlayGraphic;
-
-    pthread_mutex_destroy(m_mtxPlayStat);
-    pthread_cond_destroy(m_condPlayCond);
-    free(m_mtxPlayStat);
-    free(m_condPlayCond);
-
     uninit_log();
     if (components)
     {
@@ -118,35 +55,21 @@ Form1::~Form1()
 
 System::Void Form1::VideoPlaybackPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
 {
-    Int32 orgPlayStat = PlayStat;
-    if(m_pl)  // need to reallocate if player has been created
+    if(m_CPlayer)  // need to reallocate if player has been created
     {
+        Int32 orgPlayStat = m_CPlayer->GetStat();
         if(orgPlayStat == PS_PLAY) // first pause read, decode and render thread
         {
-            pthread_mutex_lock(m_mtxPlayStat);
-            PlayStat = PS_PAUSE;
-            pthread_cond_broadcast(m_condPlayCond);  // send pause command to threads
-            pthread_mutex_unlock(m_mtxPlayStat);
-            packet_queue_abort(&(m_pl->videoq), true);
-            picture_queue_abort(&(m_pl->pictq), true);
-
-            while(readThStat != PS_PAUSE || decThStat != PS_PAUSE || rendThStat != PS_PAUSE)
-                Sleep(1);
+            m_CPlayer->PlayerPause();
+            m_CPlayer->WaitUntilPaused();
         }
 
         setRenderArea();
+
         if(m_doscale)
         {
-            if(m_pl->sws_ctx)
-                sws_freeContext(m_pl->sws_ctx);
-            m_pl->sws_ctx = sws_getContext(m_pl->width, m_pl->height, AV_PIX_FMT_YUV420P,
-                m_renderAreaWidth, m_renderAreaHeight, AV_PIX_FMT_BGR24, 
-                SWS_BILINEAR, NULL, NULL, NULL);
-            if(m_pl->sws_ctx == NULL)
-                va_log(LOGLEVEL_ERROR, "VideoPlayBackPannel Resize, alloc swx_ctx failed.\n");
-
-            m_rpic = gcnew Bitmap(m_renderAreaWidth, m_renderAreaHeight, PixelFormat::Format24bppRgb); // TODO: cause memory leak?
-            picture_queue_alloc_rgbframe(&(m_pl->pictq), m_renderAreaWidth, m_renderAreaHeight);
+            m_rpic = gcnew Bitmap(m_renderAreaWidth, m_renderAreaHeight, PixelFormat::Format24bppRgb);
+            m_CPlayer->InitScaleParameters(m_renderAreaWidth, m_renderAreaHeight);
             va_log(LOGLEVEL_INFO, "VideoPlayBackPannel Resize, new sws_ctx width, height = %d, %d\n", m_renderAreaWidth, m_renderAreaHeight);
         }
         else  // nothing to do
@@ -163,15 +86,7 @@ System::Void Form1::VideoPlaybackPannel_Paint(System::Object^  sender, System::W
         m_videoPlayGraphic->Clear(BackColor);
 
         if(orgPlayStat == PS_PLAY) // resume play
-        {
-            packet_queue_abort(&(m_pl->videoq), false);
-            picture_queue_abort(&(m_pl->pictq), false);
-
-            pthread_mutex_lock(m_mtxPlayStat);
-            PlayStat = PS_PLAY;
-            pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
-            pthread_mutex_unlock(m_mtxPlayStat);
-        }
+            m_CPlayer->PlayerStart();
     }
 }
 
@@ -181,7 +96,7 @@ System::Void Form1::VideoBitratePannel_Paint(System::Object^  sender, System::Wi
 
 System::Void Form1::VideoBitratePicBox_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
 {
-    if(m_pl)
+    if(m_CPlayer)
     {
         Graphics^ g = VideoBitRatePicBox->CreateGraphics();
         Int32 xStart = VideoBitratePannel->HorizontalScroll->Value / m_oscBitRate->mGridWidth * m_oscBitRate->mGridWidth;
@@ -204,8 +119,8 @@ System::Void Form1::VBVBufferPannel_Paint(System::Object^  sender, System::Windo
 
 System::Void Form1::setRenderArea()
 {
-    Int32     picWidth = m_pl->width;
-    Int32    picHeight = m_pl->height;
+    Int32     picWidth = m_CPlayer->m_iWidth;
+    Int32    picHeight = m_CPlayer->m_iHeight;
     Int32  pannelWidth = VideoPlaybackPannel->Width;
     Int32 pannelHeight = VideoPlaybackPannel->Height;
     float      fScaleY = (float)pannelHeight / picHeight; 
@@ -262,47 +177,93 @@ System::Void Form1::drawGrid(Graphics^ g, Int32 xOffset, Int32 Width, Int32 Heig
     g->DrawLine(pen, bl->X, bl->Y, br->X, br->Y);
 }
 
+System::Void RenderThreadProc(Object^ data) // render thread calls
+{
+    Form1^ mainForm = (Form1^)data;
+    VideoPlayer* pl = mainForm->m_CPlayer;
+
+    while(pl == NULL) // wait until 
+        Sleep(1);
+
+    while(1)
+    {
+        if(pl->WaitToPlayOrExit() == PS_EXIT)
+            break;
+
+        Frame* renderFrame = picture_queue_get_read_picture(&(pl->m_pictq));
+        if(!renderFrame)
+            return;
+        int    rgbFrmWidth = renderFrame->rgbframe->width;
+        int   rgbFrmHeight = renderFrame->rgbframe->height;
+
+        mainForm->updateBitStat(renderFrame->frame_pkt_bits, (int)(renderFrame->pts * 1000));
+
+        if(/*!m_doscale || */renderFrame->b_rgbready == false)
+        {
+            va_log(LOGLEVEL_INFO, "Render frame pts = %8d ms, sws_scale width, height = %d, %d\n", (int)(1000 * renderFrame->pts), renderFrame->rgbframe->width, renderFrame->rgbframe->height);
+            sws_scale(pl->m_pSwsCtx, 
+                      renderFrame->yuvframe->data, renderFrame->yuvframe->linesize, 0, renderFrame->yuvframe->height, 
+                      renderFrame->rgbframe->data, renderFrame->rgbframe->linesize);
+        }
+
+        Drawing::Rectangle rect = Drawing::Rectangle(0, 0, rgbFrmWidth, rgbFrmHeight);
+        BitmapData^ bmpData = mainForm->m_rpic->LockBits(rect, ImageLockMode::ReadWrite, mainForm->m_rpic->PixelFormat);
+        IntPtr   bmpDataPtr = bmpData->Scan0;
+        int           bytes = Math::Abs(bmpData->Stride) * mainForm->m_rpic->Height;
+
+        char* p = (char *)bmpDataPtr.ToPointer();
+        memcpy(p, renderFrame->rgbframe->data[0], bytes * sizeof(char));
+
+        mainForm->m_rpic->UnlockBits(bmpData);
+
+        va_log(LOGLEVEL_INFO, "Render Frame(pts = %6dms) Started, frameSize = (%4d, %4d), RenderArea: topleft = (%4d, %4d), RenderSize = (%4d, %4d)\n", (int)(1000 * renderFrame->pts), rgbFrmWidth, rgbFrmHeight, mainForm->m_renderTlx, mainForm->m_renderTly,mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight);
+        mainForm->m_videoPlayGraphic->DrawImage(mainForm->m_rpic, mainForm->m_renderTlx, mainForm->m_renderTly, mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight);
+        picture_queue_finish_read(&(pl->m_pictq));
+        va_log(LOGLEVEL_INFO, "Render Frame(pts = %6dms) Ended\n", (int)(1000 * renderFrame->pts));
+    } 
+}
+
 System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) 
 {
-    // First reset Play stat
-    pthread_mutex_lock(m_mtxPlayStat);
-    PlayStat = PS_NONE;
-    pthread_cond_broadcast(m_condPlayCond);  // send init command to threads
-    pthread_mutex_unlock(m_mtxPlayStat);
+    if(m_CPlayer)
+    {
+        m_CPlayer->PlayerExit();
+        rendThread->Join();  // wait render thread exit first and then delete player
+        delete m_CPlayer;
+    }
 
     openFileDialog->ShowDialog();
     mfilename = openFileDialog->FileName;
     this->Text = L"VideoAnalyzer " + mfilename;
     va_log(LOGLEVEL_INFO, "Open File %s\n", (char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(mfilename));
 
-    pthread_mutex_lock(m_mtxPlayStat);
-    PlayStat = PS_EXIT;  
-    pthread_cond_broadcast(m_condPlayCond);  // send exit command to threads
-    pthread_mutex_unlock(m_mtxPlayStat);
-    PlayerExit();
+    m_CPlayer = new VideoPlayer((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(mfilename));
+    m_CPlayer->PlayerInit();
+    rendThread = gcnew Thread(gcnew ParameterizedThreadStart(&RenderThreadProc));
+    rendThread->Start(this);
 
-    pthread_mutex_lock(m_mtxPlayStat);
-    PlayStat = PS_NONE;  
-    pthread_cond_broadcast(m_condPlayCond);  // send exit command to threads
-    pthread_mutex_unlock(m_mtxPlayStat);
-    PlayerInit();
+    mVideoInfo = System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)m_CPlayer->GetVideoInfo());
+    setVideoInfoMethod(mVideoInfo);  // show basic video infos
 
-    pthread_mutex_lock(m_mtxPlayStat);
-    PlayStat = PS_INIT;
-    pthread_cond_broadcast(m_condPlayCond);  // send init command to threads
-    pthread_mutex_unlock(m_mtxPlayStat);
+    setRenderArea();
 
-    pthread_mutex_lock(m_mtxPlayStat);
-    while(PlayStat == PS_INIT)
-        pthread_cond_wait(m_condPlayCond, m_mtxPlayStat); // wait until init finished
-    pthread_mutex_unlock(m_mtxPlayStat);
+    if(m_doscale)
+    {
+        m_rpic = gcnew Bitmap(m_renderAreaWidth, m_renderAreaHeight, PixelFormat::Format24bppRgb);
+        m_CPlayer->InitScaleParameters(m_renderAreaWidth, m_renderAreaHeight);
+    }
+    else
+    {
+        m_rpic = gcnew Bitmap(m_CPlayer->m_iWidth, m_CPlayer->m_iHeight, PixelFormat::Format24bppRgb);
+        m_CPlayer->InitScaleParameters(m_CPlayer->m_iWidth, m_CPlayer->m_iHeight);
+    }
 
-    int duration_sec = (int)((m_pl->avftx->duration - m_pl->avftx->start_time) / AV_TIME_BASE) + 1;
+    int duration_sec = m_CPlayer->GetDuration() + 1;
     VideoBitRatePicBox->Width = m_oscBitRate->mGridWidth * duration_sec;
     //m_CBitRateStat->updateLastPts((int)1000 * (m_pl->avftx->start_time) / AV_TIME_BASE);
-    if(m_pl->avftx->bit_rate)
+    if(m_CPlayer->GetFileBitRate())
     {
-        m_oscBitRate->mYMax = (int)(m_pl->avftx->bit_rate / 1000) * 2;
+        m_oscBitRate->mYMax = (int)(m_CPlayer->GetFileBitRate() / 1000) * 2;
         m_oscBitRate->mYScale = (float)m_oscBitRate->mactHeight / m_oscBitRate->mYMax;
     }
     m_CBitRateStat->reset();
@@ -313,56 +274,12 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
     g->Clear(BackColor);
     delete g;
     setBRPannelHScrollMethod(0);
-
-    setVideoInfoMethod(mVideoInfo);
-    //if(vcodecpar->bit_rate)
-    //{
-    //    VidInfoStr += L"\nVideo Bitrate:\n   " + (int)(vcodecpar->bit_rate / 1000) + " kbps\n";
-    //    mainForm->m_oscBitRate->mYMax = (int)(vcodecpar->bit_rate / 1000) * 2;
-    //}
 }
 
 System::Void Form1::StopButton_Click(System::Object^  sender, System::EventArgs^  e) 
 {
-    pthread_mutex_lock(m_mtxPlayStat);
-    PlayStat = PS_PAUSE;
-    pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
-    pthread_mutex_unlock(m_mtxPlayStat);
-    va_log(LOGLEVEL_INFO, "Stop Play\n");
-}
-
-System::Void Form1::RenderFrame(void) // render thread calls
-{
-    Frame* renderFrame = picture_queue_get_read_picture(&(m_pl->pictq));
-    if(!renderFrame)
-        return;
-    int    rgbFrmWidth = renderFrame->rgbframe->width;
-    int   rgbFrmHeight = renderFrame->rgbframe->height;
-
-    updateBitStat(renderFrame->frame_pkt_bits, (int)(renderFrame->pts * 1000));
-
-    if(/*!m_doscale || */renderFrame->b_rgbready == false)
-    {
-        va_log(LOGLEVEL_INFO, "Render frame pts = %8d ms, sws_scale width, height = %d, %d\n", (int)(1000 * renderFrame->pts), renderFrame->rgbframe->width, renderFrame->rgbframe->height);
-        sws_scale(m_pl->sws_ctx, 
-                  renderFrame->yuvframe->data, renderFrame->yuvframe->linesize, 0, renderFrame->yuvframe->height, 
-                  renderFrame->rgbframe->data, renderFrame->rgbframe->linesize);
-    }
-
-    Drawing::Rectangle rect = Drawing::Rectangle(0, 0, rgbFrmWidth, rgbFrmHeight);
-    BitmapData^ bmpData = m_rpic->LockBits(rect, ImageLockMode::ReadWrite, m_rpic->PixelFormat);
-    IntPtr   bmpDataPtr = bmpData->Scan0;
-    int           bytes = Math::Abs(bmpData->Stride) * m_rpic->Height;
-
-    char* p = (char *)bmpDataPtr.ToPointer();
-    memcpy(p, renderFrame->rgbframe->data[0], bytes * sizeof(char));
-
-    m_rpic->UnlockBits(bmpData);
-    
-    va_log(LOGLEVEL_INFO, "Render Frame(pts = %6dms) Started, frameSize = (%4d, %4d), RenderArea: topleft = (%4d, %4d), RenderSize = (%4d, %4d)\n", (int)(1000 * renderFrame->pts), rgbFrmWidth, rgbFrmHeight, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
-    m_videoPlayGraphic->DrawImage(m_rpic, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
-    picture_queue_finish_read(&(m_pl->pictq));
-    va_log(LOGLEVEL_INFO, "Render Frame(pts = %6dms) Ended\n", (int)(1000 * renderFrame->pts));
+    if(m_CPlayer)
+        m_CPlayer->PlayerPause();
 }
 
 System::Void Form1::updateBitStat(int frameBits, int pts)
@@ -398,10 +315,9 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
     if(String::IsNullOrEmpty(mfilename)) // input file not choosen yet
         return;
 
-    pthread_mutex_lock(m_mtxPlayStat);
-    PlayStat = PS_PLAY;
-    pthread_cond_broadcast(m_condPlayCond);  // send play command to threads
-    pthread_mutex_unlock(m_mtxPlayStat);
-
-    va_log(LOGLEVEL_INFO, "Start to Play\n");
+    if(m_CPlayer)
+    {
+        m_CPlayer->PlayerStart();
+        va_log(LOGLEVEL_INFO, "Play Button Clicked, start to play.\n");
+    }
 }
