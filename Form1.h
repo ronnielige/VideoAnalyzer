@@ -348,9 +348,9 @@ namespace VideoAnalyzer {
             // 
             // VideoBitRatePicBox
             // 
-            this->VideoBitRatePicBox->Location = System::Drawing::Point(3, 3);
+            this->VideoBitRatePicBox->Location = System::Drawing::Point(0, 4);
             this->VideoBitRatePicBox->Name = L"VideoBitRatePicBox";
-            this->VideoBitRatePicBox->Size = System::Drawing::Size(395, 155);
+            this->VideoBitRatePicBox->Size = System::Drawing::Size(395, 150);
             this->VideoBitRatePicBox->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
             this->VideoBitRatePicBox->TabIndex = 0;
             this->VideoBitRatePicBox->TabStop = false;
