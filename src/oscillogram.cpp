@@ -34,6 +34,12 @@ oscillogram::~oscillogram()
     pthread_mutex_destroy(m_mtx);
 }
 
+void oscillogram::reset()
+{
+    mLastP.X = 0;
+    mLastP.Y = 0;
+}
+
 void oscillogram::addPoint(int xValue, int yValue)
 {
     int xPos = xValue * mGridWidth;

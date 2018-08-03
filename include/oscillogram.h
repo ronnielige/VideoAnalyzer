@@ -37,6 +37,15 @@ public:
 
     void addPoint(int xvalue, int yvalue);
     void showPoints(int yArray[], int xStart, int numPoints);
+    void setYMax(int ym)
+    {
+        mYMax = ym;
+    }
+    void setYScale(float ys)
+    {
+        mYScale = ys;
+    }
+    void reset();
 };
 
 #endif

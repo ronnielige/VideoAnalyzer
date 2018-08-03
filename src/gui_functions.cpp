@@ -263,9 +263,10 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
     //m_CBitRateStat->updateLastPts((int)1000 * (m_pl->avftx->start_time) / AV_TIME_BASE);
     if(m_CPlayer->GetFileBitRate())
     {
-        m_oscBitRate->mYMax = (int)(m_CPlayer->GetFileBitRate() / 1000) * 2;
-        m_oscBitRate->mYScale = (float)m_oscBitRate->mactHeight / m_oscBitRate->mYMax;
+        m_oscBitRate->setYMax((int)(m_CPlayer->GetFileBitRate() / 1000) * 2);
+        m_oscBitRate->setYScale((float)m_oscBitRate->mactHeight / m_oscBitRate->mYMax);
     }
+    m_oscBitRate->reset();
     m_CBitRateStat->reset();
     m_CFrameBitsStat->reset();
 

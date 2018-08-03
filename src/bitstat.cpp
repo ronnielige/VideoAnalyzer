@@ -52,6 +52,7 @@ int BitStat::reallocBitArrayIfNeeded(void)
 void BitStat::reset(void)
 {
     m_iBitAIdx = 0;
+    m_iLastPts = 0;
     if(m_piBitArray != NULL)
         memset(m_piBitArray, 0, sizeof(int) * m_iBitASize);
 }
