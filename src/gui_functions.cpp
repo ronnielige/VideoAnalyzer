@@ -260,7 +260,7 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
 
     int duration_sec = m_CPlayer->GetDuration() + 1;
     VideoBitRatePicBox->Width = m_oscBitRate->mGridWidth * duration_sec;
-    //m_CBitRateStat->updateLastPts((int)1000 * (m_pl->avftx->start_time) / AV_TIME_BASE);
+    m_CBitRateStat->updateLastPts((int)1000 * (m_CPlayer->m_pAvftx->start_time) / AV_TIME_BASE);
     if(m_CPlayer->GetFileBitRate())
     {
         m_oscBitRate->setYMax((int)(m_CPlayer->GetFileBitRate() / 1000) * 2);
