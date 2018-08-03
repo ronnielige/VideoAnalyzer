@@ -197,7 +197,7 @@ void VideoPlayer::InitScaleParameters(int dstWidth, int dstHeight)
     if(m_pSwsCtx)
         sws_freeContext(m_pSwsCtx);
 
-    m_pSwsCtx = sws_getContext(m_iWidth, m_iHeight, AV_PIX_FMT_YUV420P,
+    m_pSwsCtx = sws_getContext(m_iWidth, m_iHeight, m_pAvctx->pix_fmt,
                                dstWidth, dstHeight, AV_PIX_FMT_BGR24, 
                                SWS_BICUBIC, NULL, NULL, NULL);
     picture_queue_alloc_rgbframe(&(m_pictq), dstWidth, dstHeight);
