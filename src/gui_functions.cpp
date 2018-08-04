@@ -21,9 +21,12 @@ Form1::Form1(void)
     m_CBitRateStat   = new BitStat(1000);
     m_CFrameBitsStat = new BitStat(25000);
 
+    // set delegates
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
     msetBitRatePicBoxWidthDelegate = gcnew setBitRatePicBoxWidthDelegate(this, &Form1::setBitRatePicBoxWidthMethod);
     msetBitRatePannelHScrollDelegate = gcnew setBitRatePannelHScrollDelegate(this, &Form1::setBRPannelHScrollMethod);
+    mRefreshPixBoxDelegate = gcnew refreshPicBoxDelegate(this, &Form1::refreshPicBoxMethod);
+    mCallPicBoxPaintDelegate = gcnew callPicBoxPaintDelegate(this, &Form1::callPicBoxPaintMethod);
 
     this->SetStyle(static_cast<ControlStyles>(ControlStyles::DoubleBuffer | ControlStyles::UserPaint | ControlStyles::AllPaintingInWmPaint), true);
     this->UpdateStyles();
@@ -106,10 +109,8 @@ System::Void Form1::VideoBitratePicBox_Paint(System::Object^  sender, System::Wi
         targetPicBoxWidth = max(VideoBitRatePicBox->Width, VideoBitratePannel->HorizontalScroll->Value + VideoBitratePannel->Width * 2);
         targetPicBoxWidth = min(targetPicBoxWidth,         m_CBitRateStat->getNewstAIdx() * m_oscBitRate->mGridWidth + VideoBitratePannel->Width * 2);
 
-        //Invoke(msetBitRatePicBoxWidthDelegate, targetPicBoxWidth);  // this method cause flash
-        //while(VideoBitRatePicBox->Width != targetPicBoxWidth)
-        //    Sleep(1);
-        VideoBitRatePicBox->Width = targetPicBoxWidth;  // fix flash, but it's not allowed 
+        Invoke(msetBitRatePicBoxWidthDelegate, targetPicBoxWidth); 
+        //VideoBitRatePicBox->Width = targetPicBoxWidth;  // fix flash, but it's not allowed in debug mode
 
         int   numPoints = (m_CBitRateStat->getNewstAIdx() - xIdx) < 0? 0: min(m_CBitRateStat->getNewstAIdx() - xIdx, VideoBitratePannel->Width / m_oscBitRate->mGridWidth + 2);
         drawGrid(g, xStart, VideoBitratePannel->Width + 2 * m_oscBitRate->mGridWidth, VideoBitRatePicBox->Height, 20, 0, 0);
@@ -305,14 +306,11 @@ System::Void Form1::updateBitStat(int frameBits, int pts)
 
         int xOffset = VideoBitratePannel->HorizontalScroll->Value;
         int targetX = m_CBitRateStat->getNewstAIdx() * m_oscBitRate->mGridWidth;
-        if(targetX - xOffset > VideoBitratePannel->Width) // reached right boundary, need to scroll left 
+        if(targetX - xOffset > VideoBitratePannel->Width - 2 * m_oscBitRate->mGridWidth) // almost reached right boundary, need to scroll left 
         {
             Invoke(msetBitRatePannelHScrollDelegate, targetX - VideoBitratePannel->Width / 2); 
-            System::Windows::Forms::PaintEventArgs^  e;
-            Graphics^ g = VideoBitRatePicBox->CreateGraphics();
-            g->Clear(BackColor);
-            delete g;
-            VideoBitratePicBox_Paint(this, e);
+            Invoke(mRefreshPixBoxDelegate);   // clear draw contents and keep background color
+            Invoke(mCallPicBoxPaintDelegate);
         }
         m_oscBitRate->addPoint(m_CBitRateStat->getNewstAIdx(), m_CBitRateStat->getNewstValue() / 1000); // bitrate(kbps)
         m_CBitRateStat->updateLastPts(pts);

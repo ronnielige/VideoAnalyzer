@@ -57,6 +57,13 @@ namespace VideoAnalyzer {
         delegate void setBitRatePannelHScrollDelegate(Int32 x);
         setBitRatePannelHScrollDelegate^ msetBitRatePannelHScrollDelegate;
 
+        delegate void refreshPicBoxDelegate(void);
+        refreshPicBoxDelegate^ mRefreshPixBoxDelegate;
+
+        delegate void callPicBoxPaintDelegate(void);
+        callPicBoxPaintDelegate^ mCallPicBoxPaintDelegate;
+
+
     protected:
         /// <summary>
         /// Clean up any resources being used.
@@ -103,6 +110,16 @@ namespace VideoAnalyzer {
                 Point p(x, 0);
                 //VideoBitratePannel->HorizontalScroll->Value = x;
                 VideoBitratePannel->AutoScrollPosition = p;
+            }
+    public: System::Void refreshPicBoxMethod(void)
+            {
+                VideoBitRatePicBox->Refresh();
+            }
+
+    public: System::Void callPicBoxPaintMethod(void)
+            {
+                System::Windows::Forms::PaintEventArgs^  e;
+                VideoBitratePicBox_Paint(this, e);
             }
 
     protected: 
