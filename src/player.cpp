@@ -93,6 +93,7 @@ VideoPlayer::VideoPlayer(void)
     m_iPlayStat = PS_NONE;    // init Player Stat 
     pthread_mutex_init(&m_mtxPlayStat, NULL);
     pthread_cond_init(&m_condPlayCond, NULL);
+    pthread_mutex_init(&m_mtxSwsCtx, NULL);
 }
 
 VideoPlayer::VideoPlayer(char* filename)
@@ -117,6 +118,7 @@ VideoPlayer::VideoPlayer(char* filename)
     m_iPlayStat    = PS_NONE;    // init Player Stat 
     pthread_mutex_init(&m_mtxPlayStat, NULL);
     pthread_cond_init(&m_condPlayCond, NULL);
+    pthread_mutex_init(&m_mtxSwsCtx, NULL);
 }
 
 VideoPlayer::~VideoPlayer()
@@ -141,6 +143,7 @@ VideoPlayer::~VideoPlayer()
 
     pthread_mutex_destroy(&m_mtxPlayStat);
     pthread_cond_destroy(&m_condPlayCond);
+    pthread_mutex_destroy(&m_mtxSwsCtx);
 }
 
 void VideoPlayer::PlayerInit()
@@ -194,6 +197,7 @@ void VideoPlayer::PlayerInit()
 
 void VideoPlayer::InitScaleParameters(int dstWidth, int dstHeight)
 {
+    pthread_mutex_lock(&m_mtxSwsCtx);
     if(m_pSwsCtx)
         sws_freeContext(m_pSwsCtx);
 
@@ -201,6 +205,7 @@ void VideoPlayer::InitScaleParameters(int dstWidth, int dstHeight)
                                dstWidth, dstHeight, AV_PIX_FMT_BGR24, 
                                SWS_BICUBIC, NULL, NULL, NULL);
     picture_queue_alloc_rgbframe(&(m_pictq), dstWidth, dstHeight);
+    pthread_mutex_unlock(&m_mtxSwsCtx);
 }
 
 void VideoPlayer::PlayerStart()
@@ -391,11 +396,13 @@ void* VideoPlayer::decodeThread(void* v)
                     frame_pkt_size = 0;
                     if(1)
                     {
+                        pthread_mutex_lock(&pl->m_mtxSwsCtx);
                         va_log(LOGLEVEL_INFO, "Decode frame pts = %8d ms, sws_scale width, height = %d, %d\n", (int)(1000 * myframe->pts), myframe->rgbframe->width, myframe->rgbframe->height);
                         sws_scale(pl->m_pSwsCtx, 
                                   myframe->yuvframe->data, myframe->yuvframe->linesize, 0, myframe->yuvframe->height, 
                                   myframe->rgbframe->data, myframe->rgbframe->linesize);
                         myframe->b_rgbready = true;
+                        pthread_mutex_unlock(&pl->m_mtxSwsCtx);
                     }
                     va_log(LOGLEVEL_FULL, "Decoded frame pts = %8d ms, %lld \n", (int)(1000 * myframe->pts), DateTime::Now.ToFileTime() / 10000);
                     picture_queue_write(fq);

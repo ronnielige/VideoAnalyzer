@@ -28,6 +28,7 @@ namespace VideoAnalyzer {
         System::String^ mfilename;  // input filename
         Form1(void);
         
+        pthread_mutex_t* m_mtxRPic;
         Bitmap^      m_rpic; // render picture
         bool         m_doscale;  // resize rgbframe to render window size by ourself
         Graphics^    m_videoPlayGraphic;

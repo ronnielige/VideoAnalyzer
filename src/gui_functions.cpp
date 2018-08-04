@@ -16,6 +16,9 @@ Form1::Form1(void)
     m_renderAreaWidth  = VideoPlaybackPannel->Width;
     m_renderAreaHeight = VideoPlaybackPannel->Height;
 
+    m_mtxRPic = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_init(m_mtxRPic, NULL);
+
     m_videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
     m_CPlayer = NULL;
     m_CBitRateStat   = new BitStat(1000);
@@ -48,6 +51,12 @@ Form1::~Form1()
         delete m_CPlayer;
     }
  
+    if(m_mtxRPic)
+    {
+        pthread_mutex_destroy(m_mtxRPic);
+        free(m_mtxRPic);
+    }
+
     delete m_videoPlayGraphic;
     uninit_log();
     if (components)
@@ -71,8 +80,10 @@ System::Void Form1::VideoPlaybackPannel_Paint(System::Object^  sender, System::W
 
         if(m_doscale)
         {
+            pthread_mutex_lock(m_mtxRPic);
             m_rpic = gcnew Bitmap(m_renderAreaWidth, m_renderAreaHeight, PixelFormat::Format24bppRgb);
             m_CPlayer->InitScaleParameters(m_renderAreaWidth, m_renderAreaHeight);
+            pthread_mutex_unlock(m_mtxRPic);
             va_log(LOGLEVEL_INFO, "VideoPlayBackPannel Resize, new sws_ctx width, height = %d, %d\n", m_renderAreaWidth, m_renderAreaHeight);
         }
         else  // nothing to do
@@ -210,12 +221,15 @@ System::Void RenderThreadProc(Object^ data) // render thread calls
 
         if(/*!m_doscale || */renderFrame->b_rgbready == false)
         {
+            pthread_mutex_lock(&pl->m_mtxSwsCtx);
             va_log(LOGLEVEL_INFO, "Render frame pts = %8d ms, sws_scale width, height = %d, %d\n", (int)(1000 * renderFrame->pts), renderFrame->rgbframe->width, renderFrame->rgbframe->height);
             sws_scale(pl->m_pSwsCtx, 
                       renderFrame->yuvframe->data, renderFrame->yuvframe->linesize, 0, renderFrame->yuvframe->height, 
                       renderFrame->rgbframe->data, renderFrame->rgbframe->linesize);
+            pthread_mutex_unlock(&pl->m_mtxSwsCtx);
         }
 
+        pthread_mutex_lock(mainForm->m_mtxRPic);
         Drawing::Rectangle rect = Drawing::Rectangle(0, 0, rgbFrmWidth, rgbFrmHeight);
         BitmapData^ bmpData = mainForm->m_rpic->LockBits(rect, ImageLockMode::ReadWrite, mainForm->m_rpic->PixelFormat);
         IntPtr   bmpDataPtr = bmpData->Scan0;
@@ -230,6 +244,7 @@ System::Void RenderThreadProc(Object^ data) // render thread calls
         mainForm->m_videoPlayGraphic->DrawImage(mainForm->m_rpic, mainForm->m_renderTlx, mainForm->m_renderTly, mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight);
         picture_queue_finish_read(&(pl->m_pictq));
         va_log(LOGLEVEL_INFO, "Render Frame(pts = %6dms) Ended\n", (int)(1000 * renderFrame->pts));
+        pthread_mutex_unlock(mainForm->m_mtxRPic);
     } 
 }
 

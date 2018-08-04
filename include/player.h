@@ -37,6 +37,7 @@ public:
     int                m_iPlayStat;
     pthread_mutex_t    m_mtxPlayStat;
     pthread_cond_t     m_condPlayCond;
+    pthread_mutex_t    m_mtxSwsCtx;
 
     pthread_t          m_pReadThread;
     pthread_t          m_pDecThread;
