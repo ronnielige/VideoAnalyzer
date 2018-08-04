@@ -30,9 +30,10 @@ namespace VideoAnalyzer {
         
         pthread_mutex_t* m_mtxRPic;
         Bitmap^      m_rpic; // render picture
-        bool         m_doscale;  // resize rgbframe to render window size by ourself
+        bool         m_bffScale;  // resize rgbframe to render window size by ffmpeg scale?
         Graphics^    m_videoPlayGraphic;
         oscillogram^ m_oscBitRate;
+        int          m_iLogLevel;
 
         VideoPlayer* m_CPlayer;
         BitStat*     m_CBitRateStat;   // stat bitrate per second

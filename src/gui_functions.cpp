@@ -8,11 +8,13 @@ using namespace VideoAnalyzer;
 Form1::Form1(void)
 {
     InitializeComponent();
-    if(init_log() < 0) // can't open output log file
+
+    m_iLogLevel = LOGLEVEL_DEBUG;    // don't output log
+    if(m_iLogLevel != LOGLEVEL_NONE && init_log(m_iLogLevel) < 0) // can't open output log file
         exit(1);
 
     m_renderTlx = m_renderTly = 0;
-    m_doscale = 0;  // TODO: =1 reduce ShowFrame time consuming, but brings crash problem. need to fix it.
+    m_bffScale = false;  // TODO: =true reduce ShowFrame time consuming, but brings crash problem. need to fix it.
     m_renderAreaWidth  = VideoPlaybackPannel->Width;
     m_renderAreaHeight = VideoPlaybackPannel->Height;
 
@@ -58,7 +60,10 @@ Form1::~Form1()
     }
 
     delete m_videoPlayGraphic;
-    uninit_log();
+
+    if(m_iLogLevel != LOGLEVEL_NONE)
+        uninit_log();
+
     if (components)
     {
         delete components;
@@ -78,13 +83,13 @@ System::Void Form1::VideoPlaybackPannel_Paint(System::Object^  sender, System::W
 
         setRenderArea();
 
-        if(m_doscale)
+        if(m_bffScale)
         {
             pthread_mutex_lock(m_mtxRPic);
             m_rpic = gcnew Bitmap(m_renderAreaWidth, m_renderAreaHeight, PixelFormat::Format24bppRgb);
             m_CPlayer->InitScaleParameters(m_renderAreaWidth, m_renderAreaHeight);
             pthread_mutex_unlock(m_mtxRPic);
-            va_log(LOGLEVEL_INFO, "VideoPlayBackPannel Resize, new sws_ctx width, height = %d, %d\n", m_renderAreaWidth, m_renderAreaHeight);
+            va_log(LOGLEVEL_KEYINFO, "VideoPlayBackPannel Resize, new sws_ctx width, height = %d, %d\n", m_renderAreaWidth, m_renderAreaHeight);
         }
         else  // nothing to do
         {
@@ -162,7 +167,7 @@ System::Void Form1::setRenderArea()
     m_renderTly = (pannelHeight - ScaledHeight) >> 1;
     m_renderAreaWidth  = ScaledWidth;
     m_renderAreaHeight = ScaledHeight;
-    va_log(LOGLEVEL_INFO, "setRenderArea: VideoRenderWindiw Size (%4d, %4d); RenderArea: topleft = (%4d, %4d), Size = (%4d, %4d)\n", pannelWidth, pannelHeight, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
+    va_log(LOGLEVEL_DEBUG, "setRenderArea: VideoRenderWindiw Size (%4d, %4d); RenderArea: topleft = (%4d, %4d), Size = (%4d, %4d)\n", pannelWidth, pannelHeight, m_renderTlx, m_renderTly, m_renderAreaWidth, m_renderAreaHeight);
 }
 
 System::Void Form1::drawGrid(Graphics^ g, Int32 xOffset, Int32 Width, Int32 Height, Int32 GridSize, Int32 ipadx, Int32 ipady)
@@ -222,7 +227,7 @@ System::Void RenderThreadProc(Object^ data) // render thread calls
         if(/*!m_doscale || */renderFrame->b_rgbready == false)
         {
             pthread_mutex_lock(&pl->m_mtxSwsCtx);
-            va_log(LOGLEVEL_INFO, "Render frame pts = %8d ms, sws_scale width, height = %d, %d\n", (int)(1000 * renderFrame->pts), renderFrame->rgbframe->width, renderFrame->rgbframe->height);
+            va_log(LOGLEVEL_DEBUG, "Render frame pts = %8d ms, sws_scale width, height = %d, %d\n", (int)(1000 * renderFrame->pts), renderFrame->rgbframe->width, renderFrame->rgbframe->height);
             sws_scale(pl->m_pSwsCtx, 
                       renderFrame->yuvframe->data, renderFrame->yuvframe->linesize, 0, renderFrame->yuvframe->height, 
                       renderFrame->rgbframe->data, renderFrame->rgbframe->linesize);
@@ -240,10 +245,10 @@ System::Void RenderThreadProc(Object^ data) // render thread calls
 
         mainForm->m_rpic->UnlockBits(bmpData);
 
-        va_log(LOGLEVEL_INFO, "Render Frame(pts = %6dms) Started, frameSize = (%4d, %4d), RenderArea: topleft = (%4d, %4d), RenderSize = (%4d, %4d)\n", (int)(1000 * renderFrame->pts), rgbFrmWidth, rgbFrmHeight, mainForm->m_renderTlx, mainForm->m_renderTly,mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight);
+        va_log(LOGLEVEL_DEBUG, "Render Frame(pts = %6dms) Started, frameSize = (%4d, %4d), RenderArea: topleft = (%4d, %4d), RenderSize = (%4d, %4d)\n", (int)(1000 * renderFrame->pts), rgbFrmWidth, rgbFrmHeight, mainForm->m_renderTlx, mainForm->m_renderTly,mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight);
         mainForm->m_videoPlayGraphic->DrawImage(mainForm->m_rpic, mainForm->m_renderTlx, mainForm->m_renderTly, mainForm->m_renderAreaWidth, mainForm->m_renderAreaHeight);
         picture_queue_finish_read(&(pl->m_pictq));
-        va_log(LOGLEVEL_INFO, "Render Frame(pts = %6dms) Ended\n", (int)(1000 * renderFrame->pts));
+        va_log(LOGLEVEL_DEBUG, "Render Frame(pts = %6dms) Ended\n", (int)(1000 * renderFrame->pts));
         pthread_mutex_unlock(mainForm->m_mtxRPic);
     } 
 }
@@ -260,7 +265,7 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
     openFileDialog->ShowDialog();
     mfilename = openFileDialog->FileName;
     this->Text = L"VideoAnalyzer " + mfilename;
-    va_log(LOGLEVEL_INFO, "Open File %s\n", (char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(mfilename));
+    va_log(LOGLEVEL_KEYINFO, "Open File %s\n", (char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(mfilename));
 
     m_CPlayer = new VideoPlayer((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(mfilename));
     m_CPlayer->PlayerInit();
@@ -272,7 +277,7 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
 
     setRenderArea();
 
-    if(m_doscale)
+    if(m_bffScale)
     {
         m_rpic = gcnew Bitmap(m_renderAreaWidth, m_renderAreaHeight, PixelFormat::Format24bppRgb);
         m_CPlayer->InitScaleParameters(m_renderAreaWidth, m_renderAreaHeight);
@@ -341,6 +346,6 @@ System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^
     if(m_CPlayer)
     {
         m_CPlayer->PlayerStart();
-        va_log(LOGLEVEL_INFO, "Play Button Clicked, start to play.\n");
+        va_log(LOGLEVEL_KEYINFO, "Play Button Clicked, start to play.\n");
     }
 }

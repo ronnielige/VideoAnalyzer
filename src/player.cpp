@@ -217,7 +217,7 @@ void VideoPlayer::PlayerStart()
     m_iPlayStat = PS_PLAY;
     pthread_cond_broadcast(&m_condPlayCond);  // send play command to threads
     pthread_mutex_unlock(&m_mtxPlayStat);
-    va_log(LOGLEVEL_INFO, "Start to Play\n");
+    va_log(LOGLEVEL_KEYINFO, "Start to Play\n");
 }
 
 void VideoPlayer::PlayerPause()
@@ -227,7 +227,7 @@ void VideoPlayer::PlayerPause()
     pthread_cond_broadcast(&m_condPlayCond);  // send play command to threads
     pthread_mutex_unlock(&m_mtxPlayStat);
 
-    va_log(LOGLEVEL_INFO, "Stop Play\n");
+    va_log(LOGLEVEL_KEYINFO, "Stop Play\n");
 }
 
 void VideoPlayer::WaitUntilPaused()
@@ -330,7 +330,7 @@ void* VideoPlayer::readThread(void* v)
                     flush_pkt->data = NULL;
                     flush_pkt->size = 0;
                     packet_queue_put(&(pl->m_videoq), flush_pkt);
-                    va_log(LOGLEVEL_INFO, "readThread reached end of file, put null packet\n");
+                    va_log(LOGLEVEL_KEYINFO, "readThread reached end of file, put null packet\n");
                     break;
                 }
                 if(fmtctx->pb && fmtctx->pb->error)
@@ -397,14 +397,14 @@ void* VideoPlayer::decodeThread(void* v)
                     if(1)
                     {
                         pthread_mutex_lock(&pl->m_mtxSwsCtx);
-                        va_log(LOGLEVEL_INFO, "Decode frame pts = %8d ms, sws_scale width, height = %d, %d\n", (int)(1000 * myframe->pts), myframe->rgbframe->width, myframe->rgbframe->height);
+                        va_log(LOGLEVEL_DEBUG, "Decode frame pts = %8d ms, sws_scale width, height = %d, %d\n", (int)(1000 * myframe->pts), myframe->rgbframe->width, myframe->rgbframe->height);
                         sws_scale(pl->m_pSwsCtx, 
                                   myframe->yuvframe->data, myframe->yuvframe->linesize, 0, myframe->yuvframe->height, 
                                   myframe->rgbframe->data, myframe->rgbframe->linesize);
                         myframe->b_rgbready = true;
                         pthread_mutex_unlock(&pl->m_mtxSwsCtx);
                     }
-                    va_log(LOGLEVEL_FULL, "Decoded frame pts = %8d ms, %lld \n", (int)(1000 * myframe->pts), DateTime::Now.ToFileTime() / 10000);
+                    va_log(LOGLEVEL_DEBUG, "Decoded frame pts = %8d ms, %lld \n", (int)(1000 * myframe->pts), DateTime::Now.ToFileTime() / 10000);
                     picture_queue_write(fq);
                 }
 
@@ -419,7 +419,7 @@ void* VideoPlayer::decodeThread(void* v)
                             // TODO: need to append these frames
                         }
                     }while(got_frame);
-                    va_log(LOGLEVEL_INFO, "decodeThread received null packet, end of file and exit thread\n");
+                    va_log(LOGLEVEL_KEYINFO, "decodeThread received null packet, end of file and exit thread\n");
                     break; // exit decode thread
                 }
             }
