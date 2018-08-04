@@ -101,6 +101,15 @@ System::Void Form1::VideoBitratePicBox_Paint(System::Object^  sender, System::Wi
         Graphics^ g = VideoBitRatePicBox->CreateGraphics();
         Int32 xStart = VideoBitratePannel->HorizontalScroll->Value / m_oscBitRate->mGridWidth * m_oscBitRate->mGridWidth;
         int   xIdx = xStart / m_oscBitRate->mGridWidth;
+        int   targetPicBoxWidth;
+
+        targetPicBoxWidth = max(VideoBitRatePicBox->Width, VideoBitratePannel->HorizontalScroll->Value + VideoBitratePannel->Width * 2);
+        targetPicBoxWidth = min(targetPicBoxWidth,         m_CBitRateStat->getNewstAIdx() * m_oscBitRate->mGridWidth + VideoBitratePannel->Width * 2);
+
+        //Invoke(msetBitRatePicBoxWidthDelegate, targetPicBoxWidth);  // this method cause flash
+        //while(VideoBitRatePicBox->Width != targetPicBoxWidth)
+        //    Sleep(1);
+        VideoBitRatePicBox->Width = targetPicBoxWidth;  // fix flash, but it's not allowed 
 
         int   numPoints = (m_CBitRateStat->getNewstAIdx() - xIdx) < 0? 0: min(m_CBitRateStat->getNewstAIdx() - xIdx, VideoBitratePannel->Width / m_oscBitRate->mGridWidth + 2);
         drawGrid(g, xStart, VideoBitratePannel->Width + 2 * m_oscBitRate->mGridWidth, VideoBitRatePicBox->Height, 20, 0, 0);
@@ -259,7 +268,7 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
     }
 
     int duration_sec = m_CPlayer->GetDuration() + 1;
-    VideoBitRatePicBox->Width = m_oscBitRate->mGridWidth * duration_sec;
+    VideoBitRatePicBox->Width = VideoBitratePannel->Width;
     m_CBitRateStat->updateLastPts((int)1000 * (m_CPlayer->m_pAvftx->start_time) / AV_TIME_BASE);
     if(m_CPlayer->GetFileBitRate())
     {
