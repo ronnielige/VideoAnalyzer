@@ -14,7 +14,7 @@ Form1::Form1(void)
         exit(1);
 
     m_renderTlx = m_renderTly = 0;
-    m_bffScale = false;  // TODO: =true reduce ShowFrame time consuming, but brings crash problem. need to fix it.
+    m_bffScale = true;  // TODO: =true reduce ShowFrame time consuming, but brings crash problem. need to fix it.
     m_renderAreaWidth  = VideoPlaybackPannel->Width;
     m_renderAreaHeight = VideoPlaybackPannel->Height;
 
@@ -219,8 +219,6 @@ System::Void RenderThreadProc(Object^ data) // render thread calls
         Frame* renderFrame = picture_queue_get_read_picture(&(pl->m_pictq));
         if(!renderFrame)
             return;
-        int    rgbFrmWidth = renderFrame->rgbframe->width;
-        int   rgbFrmHeight = renderFrame->rgbframe->height;
 
         mainForm->updateBitStat(renderFrame->frame_pkt_bits, (int)(renderFrame->pts * 1000));
 
@@ -234,6 +232,8 @@ System::Void RenderThreadProc(Object^ data) // render thread calls
             pthread_mutex_unlock(&pl->m_mtxSwsCtx);
         }
 
+        int    rgbFrmWidth = renderFrame->rgbframe->width;
+        int   rgbFrmHeight = renderFrame->rgbframe->height;
         pthread_mutex_lock(mainForm->m_mtxRPic);
         Drawing::Rectangle rect = Drawing::Rectangle(0, 0, rgbFrmWidth, rgbFrmHeight);
         BitmapData^ bmpData = mainForm->m_rpic->LockBits(rect, ImageLockMode::ReadWrite, mainForm->m_rpic->PixelFormat);
