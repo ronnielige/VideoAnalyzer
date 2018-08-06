@@ -135,14 +135,6 @@ System::Void Form1::VideoBitratePicBox_Paint(System::Object^  sender, System::Wi
     }
 }
 
-System::Void Form1::VBVBufferPannel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e)
-{
-    Graphics^ g = VBVBufferPannel->CreateGraphics();
-    g->Clear(BackColor);
-    drawGrid(g, 0, VBVBufferPannel->Width, VBVBufferPannel->Height, 20, 20, 5);
-    delete g;
-}
-
 System::Void Form1::setRenderArea()
 {
     Int32     picWidth = m_CPlayer->m_iWidth;
