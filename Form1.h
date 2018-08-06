@@ -8,6 +8,8 @@
 #include "bitstat.h"
 #include "player.h"
 
+#define str2String(str) System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)(str))
+
 namespace VideoAnalyzer {
     using namespace System;
     using namespace System::ComponentModel;
@@ -41,6 +43,7 @@ namespace VideoAnalyzer {
         Thread^      rendThread;
 
         String^ mVideoInfo;
+        String^ mDuration;
 
         Int32 m_renderTlx;
         Int32 m_renderTly;
@@ -53,6 +56,9 @@ namespace VideoAnalyzer {
         delegate void setVideoInfo(String^ str_res);
         setVideoInfo^ mSetVidInfDelegate;
 
+        delegate void setPlayProgress(String^ progress);
+        setPlayProgress^ mSetPlayProgressDelegate;
+
         delegate void setBitRatePicBoxWidthDelegate(Int32 w);
         setBitRatePicBoxWidthDelegate^ msetBitRatePicBoxWidthDelegate;
 
@@ -61,6 +67,10 @@ namespace VideoAnalyzer {
 
         delegate void refreshPicBoxDelegate(void);
         refreshPicBoxDelegate^ mRefreshPixBoxDelegate;
+    private: System::Windows::Forms::Label^  PlayProgressLabel;
+    public: 
+
+    public: 
 
         delegate void callPicBoxPaintDelegate(void);
         callPicBoxPaintDelegate^ mCallPicBoxPaintDelegate;
@@ -103,6 +113,12 @@ namespace VideoAnalyzer {
             {
                 VideoInfoLabel->Text = L"============Video Info============\n" + str;
             }
+
+    public: System::Void setPlayProgressMethod(String^ str)
+            {
+                PlayProgressLabel->Text = str; 
+            }
+
     public: System::Void setBitRatePicBoxWidthMethod(Int32 w)
             {
                 VideoBitRatePicBox->Width = w;
@@ -162,6 +178,7 @@ namespace VideoAnalyzer {
             this->PlayButton = (gcnew System::Windows::Forms::Button());
             this->StopButton = (gcnew System::Windows::Forms::Button());
             this->ControlPannel = (gcnew System::Windows::Forms::Panel());
+            this->PlayProgressLabel = (gcnew System::Windows::Forms::Label());
             this->menuStrip1->SuspendLayout();
             this->VideoInfoPannel->SuspendLayout();
             this->VideoBitratePannel->SuspendLayout();
@@ -347,12 +364,23 @@ namespace VideoAnalyzer {
             // 
             this->ControlPannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left) 
                 | System::Windows::Forms::AnchorStyles::Right));
+            this->ControlPannel->Controls->Add(this->PlayProgressLabel);
             this->ControlPannel->Controls->Add(this->StopButton);
             this->ControlPannel->Controls->Add(this->PlayButton);
             this->ControlPannel->Location = System::Drawing::Point(232, 474);
             this->ControlPannel->Name = L"ControlPannel";
             this->ControlPannel->Size = System::Drawing::Size(800, 38);
             this->ControlPannel->TabIndex = 7;
+            // 
+            // PlayProgressLabel
+            // 
+            this->PlayProgressLabel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
+            this->PlayProgressLabel->AutoSize = true;
+            this->PlayProgressLabel->Location = System::Drawing::Point(677, 14);
+            this->PlayProgressLabel->Name = L"PlayProgressLabel";
+            this->PlayProgressLabel->Size = System::Drawing::Size(119, 12);
+            this->PlayProgressLabel->TabIndex = 7;
+            this->PlayProgressLabel->Text = L"           00:00:00";
             // 
             // Form1
             // 
@@ -378,6 +406,7 @@ namespace VideoAnalyzer {
             this->VideoBitratePannel->PerformLayout();
             (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->VideoBitRatePicBox))->EndInit();
             this->ControlPannel->ResumeLayout(false);
+            this->ControlPannel->PerformLayout();
             this->ResumeLayout(false);
             this->PerformLayout();
 
@@ -392,6 +421,7 @@ namespace VideoAnalyzer {
     public:  System::Void updateBitStat(int frameBits, int pts); 
     private: System::Void StopButton_Click(System::Object^  sender, System::EventArgs^  e);
     private: System::Void PlayButton_Click(System::Object^  sender, System::EventArgs^  e);
+    public:  System::Void asyncUpdatePlayProgress(Frame* renderFrame);
     private: System::Void VideoBitRatePicBox_Click(System::Object^  sender, System::EventArgs^  e) {
              }
 };

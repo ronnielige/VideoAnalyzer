@@ -36,6 +36,7 @@ typedef struct Frame{
     bool b_rgbready;
     int    frame_pkt_bits;
     double pts;
+    char   pts_str[20];
 }Frame;
 
 #define FRAME_QUEUE_SIZE 20

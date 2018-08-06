@@ -28,6 +28,7 @@ Form1::Form1(void)
 
     // set delegates
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
+    mSetPlayProgressDelegate = gcnew setPlayProgress(this, &Form1::setPlayProgressMethod);
     msetBitRatePicBoxWidthDelegate = gcnew setBitRatePicBoxWidthDelegate(this, &Form1::setBitRatePicBoxWidthMethod);
     msetBitRatePannelHScrollDelegate = gcnew setBitRatePannelHScrollDelegate(this, &Form1::setBRPannelHScrollMethod);
     mRefreshPixBoxDelegate = gcnew refreshPicBoxDelegate(this, &Form1::refreshPicBoxMethod);
@@ -210,7 +211,8 @@ System::Void RenderThreadProc(Object^ data) // render thread calls
 
         Frame* renderFrame = picture_queue_get_read_picture(&(pl->m_pictq));
         if(!renderFrame)
-            continue;;
+            continue;
+        mainForm->asyncUpdatePlayProgress(renderFrame);
 
         mainForm->updateBitStat(renderFrame->frame_pkt_bits, (int)(renderFrame->pts * 1000));
 
@@ -264,8 +266,10 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
     rendThread = gcnew Thread(gcnew ParameterizedThreadStart(&RenderThreadProc));
     rendThread->Start(this);
 
-    mVideoInfo = System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)m_CPlayer->GetVideoInfo());
-    setVideoInfoMethod(mVideoInfo);  // show basic video infos
+    mVideoInfo = str2String(m_CPlayer->GetVideoInfo());
+    mDuration  = L"00:00:00 \\ " + str2String(m_CPlayer->GetDurationStr());
+    setVideoInfoMethod(mVideoInfo);    // show basic video infos
+    setPlayProgressMethod(mDuration);
 
     setRenderArea();
 
@@ -303,6 +307,12 @@ System::Void Form1::StopButton_Click(System::Object^  sender, System::EventArgs^
 {
     if(m_CPlayer)
         m_CPlayer->PlayerPause();
+}
+
+System::Void Form1::asyncUpdatePlayProgress(Frame* renderFrame)
+{
+    BeginInvoke(mSetPlayProgressDelegate, str2String(renderFrame->pts_str) + L" \\ " + str2String(m_CPlayer->GetDurationStr()));
+    //Invoke(mSetPlayProgressDelegate, str2String(renderFrame->pts_str) + L" \\ " + str2String(m_CPlayer->GetDurationStr()));  // TODO: Invoke would hang while close winform, don't know why, refer to https://bbs.csdn.net/topics/380034313
 }
 
 System::Void Form1::updateBitStat(int frameBits, int pts)

@@ -18,6 +18,7 @@ public:
     AVFormatContext*   m_pAvftx;
     AVCodecContext*    m_pAvctx;
     char*              m_strVideoInfo;
+    char*              m_strDuration;
     PacketQueue        m_videoq;  // video packet queue
     FrameQueue         m_pictq;   // video decoded frame queue 
     struct SwsContext* m_pSwsCtx;
@@ -61,10 +62,13 @@ public:
     int  GetFileBitRate();
     int  GetStat();
     char* GetVideoInfo();
+    char* GetDurationStr();
 
     static void* readThread(void* v);
     static void* decodeThread(void* v);
     //static void* renderThread(void* v);
+private:
+    void DumpFormat(int stream_idx, char* output_str);
 };
 
 #endif

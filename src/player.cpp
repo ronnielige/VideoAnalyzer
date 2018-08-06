@@ -38,13 +38,13 @@ int stream_component_open(AVFormatContext *ic, AVCodecContext** avctx, AVCodec**
     return 0;
 }
 
-void dump_format(AVFormatContext* ic, int vid_stream_index, char* videoInfo)
+void VideoPlayer::DumpFormat(int vid_stream_index, char* videoInfo)
 {
     // Show Duration in Video Info List
-    if(ic->duration != AV_NOPTS_VALUE)
+    if(m_pAvftx->duration != AV_NOPTS_VALUE)
     {   
         int hours, mins, secs, us, start_secs, start_us;
-        int64_t duration = ic->duration + (ic->duration <= INT64_MAX - 5000 ? 5000 : 0);
+        int64_t duration = m_pAvftx->duration + (m_pAvftx->duration <= INT64_MAX - 5000 ? 5000 : 0);
         secs  = (int)(duration / AV_TIME_BASE);
         us    = (int)(duration % AV_TIME_BASE);
         mins  = secs / 60;
@@ -52,18 +52,19 @@ void dump_format(AVFormatContext* ic, int vid_stream_index, char* videoInfo)
         hours = mins / 60;
         mins %= 60;
 
-        if (ic->start_time != AV_NOPTS_VALUE) {
-            start_secs = (int)llabs(ic->start_time / AV_TIME_BASE);
-            start_us   = (int) av_rescale(llabs(ic->start_time % AV_TIME_BASE), 1000000, AV_TIME_BASE);
+        if (m_pAvftx->start_time != AV_NOPTS_VALUE) {
+            start_secs = (int)llabs(m_pAvftx->start_time / AV_TIME_BASE);
+            start_us   = (int)av_rescale(llabs(m_pAvftx->start_time % AV_TIME_BASE), 1000000, AV_TIME_BASE);
         }
-        sprintf_s(videoInfo + strlen(videoInfo), 1000 - strlen(videoInfo), "\nDuration \\ start:\n   %02d:%02d:%02d.%02d \\ %s%d.%06d\n", hours, mins, secs, (100 * us) / AV_TIME_BASE, ic->start_time >= 0 ? "" : "-", start_secs, start_us);
+        sprintf_s(videoInfo + strlen(videoInfo), 1000 - strlen(videoInfo), "\nDuration \\ start:\n   %02d:%02d:%02d.%02d \\ %s%d.%06d\n", hours, mins, secs, (100 * us) / AV_TIME_BASE, m_pAvftx->start_time >= 0 ? "" : "-", start_secs, start_us);
+        sprintf_s(m_strDuration, 100, "%02d:%02d:%02d", hours, mins, secs);
     }
     // Show Total File Bitrate in Video Info List
-    if(ic->bit_rate)
-        sprintf_s(videoInfo + strlen(videoInfo), 1000 - strlen(videoInfo), "\nFile BitRate:\n   %d kb/s\n", (int64_t)ic->bit_rate / 1000);
+    if(m_pAvftx->bit_rate)
+        sprintf_s(videoInfo + strlen(videoInfo), 1000 - strlen(videoInfo), "\nFile BitRate:\n   %d kb/s\n", (int64_t)m_pAvftx->bit_rate / 1000);
 
     // Show Frame Rate in Video Info List
-    AVStream *st = ic->streams[vid_stream_index];
+    AVStream *st = m_pAvftx->streams[vid_stream_index];
     if(st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) 
     { 
         int fps = st->avg_frame_rate.den && st->avg_frame_rate.num;
@@ -76,6 +77,7 @@ VideoPlayer::VideoPlayer(void)
 {
     m_pFilename = NULL;
     m_strVideoInfo = (char *)malloc(1000 * sizeof(char));
+    m_strDuration  = (char *)malloc(100 * sizeof(char));
     m_iFrameInterval = 40; // assume video fps = 25, then frame interval = 40 ms
     m_iWidth  = 1280;
     m_iHeight = 720;
@@ -100,6 +102,7 @@ VideoPlayer::VideoPlayer(char* filename)
 {
     m_pFilename    = (char*)malloc(strlen(filename) + 10);
     m_strVideoInfo = (char *)malloc(1000 * sizeof(char));
+    m_strDuration  = (char *)malloc(100 * sizeof(char));
     strcpy(m_pFilename, filename);
     m_iFrameInterval = 40; // assume video fps = 25, then frame interval = 40 ms
     m_iWidth  = 1280;
@@ -140,6 +143,8 @@ VideoPlayer::~VideoPlayer()
         free(m_pFilename);
     if(m_strVideoInfo)
         free(m_strVideoInfo);
+    if(m_strDuration)
+        free(m_strDuration);
 
     pthread_mutex_destroy(&m_mtxPlayStat);
     pthread_cond_destroy(&m_condPlayCond);
@@ -187,7 +192,7 @@ void VideoPlayer::PlayerInit()
             m_iWidth   = vcodecpar->width;
             m_iHeight  = vcodecpar->height;
             sprintf_s(m_strVideoInfo + strlen(m_strVideoInfo), 1000 - strlen(m_strVideoInfo), "\nVideo Codec:\n   %s\n", codec->long_name);
-            dump_format(m_pAvftx, st_index[AVMEDIA_TYPE_VIDEO], m_strVideoInfo);
+            DumpFormat(st_index[AVMEDIA_TYPE_VIDEO], m_strVideoInfo);
         }
 
         pthread_create(&m_pReadThread, NULL, readThread, (void*)this);
@@ -286,6 +291,11 @@ int VideoPlayer::GetStat()
 char* VideoPlayer::GetVideoInfo()
 {
     return m_strVideoInfo;
+}
+
+char* VideoPlayer::GetDurationStr()
+{
+    return m_strDuration;
 }
 
 void* VideoPlayer::readThread(void* v)
@@ -403,6 +413,14 @@ void* VideoPlayer::decodeThread(void* v)
                                   myframe->rgbframe->data, myframe->rgbframe->linesize);
                         myframe->b_rgbready = true;
                         pthread_mutex_unlock(&pl->m_mtxSwsCtx);
+                    }
+                    {
+                        int secs = (int)myframe->pts - (int)llabs(pl->m_pAvftx->start_time / AV_TIME_BASE);
+                        int mins = secs / 60;
+                        int hour = mins / 60;
+                        secs %= 60;
+                        mins %= 60;
+                        sprintf_s(myframe->pts_str, 20, "%02d:%02d:%02d", hour, mins, secs);
                     }
                     va_log(LOGLEVEL_DEBUG, "Decoded frame pts = %8d ms, %lld \n", (int)(1000 * myframe->pts), DateTime::Now.ToFileTime() / 10000);
                     picture_queue_write(fq);
