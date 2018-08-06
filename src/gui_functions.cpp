@@ -218,7 +218,7 @@ System::Void RenderThreadProc(Object^ data) // render thread calls
 
         Frame* renderFrame = picture_queue_get_read_picture(&(pl->m_pictq));
         if(!renderFrame)
-            return;
+            continue;;
 
         mainForm->updateBitStat(renderFrame->frame_pkt_bits, (int)(renderFrame->pts * 1000));
 
