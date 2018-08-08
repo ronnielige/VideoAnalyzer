@@ -29,6 +29,16 @@ oscillogram::oscillogram(PictureBox^ picb, int w, int h)
     //mPen->DashStyle = DashStyle::DashStyleSolid;
 }
 
+void oscillogram::setcoordinate(int tlx, int tly, int blx, int bly)
+{
+    mTlP.X = tlx;
+    mTlP.Y = tly;
+    mBlP.X = blx;
+    mBlP.Y = bly;
+    mactHeight = mBlP.Y - mTlP.Y;
+    setYScale((float)mactHeight / mYMax);
+}
+
 oscillogram::~oscillogram()
 {
     pthread_mutex_destroy(m_mtx);
@@ -55,6 +65,15 @@ void oscillogram::addPoint(int xValue, int yValue)
     mLastP.X = xPos;
     mLastP.Y = yPos;
     pthread_mutex_unlock(m_mtx);
+}
+
+bool oscillogram::bYOutofBound(int yValue)
+{
+    int yPos = mBlP.Y - (int)(yValue * mYScale);
+    if(yPos < 0)
+        return true;
+    else
+        return false;
 }
 
 void oscillogram::showPoints(int* yArray, int xStart, int numPoints)

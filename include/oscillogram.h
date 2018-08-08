@@ -46,6 +46,8 @@ public:
         mYScale = ys;
     }
     void reset();
+    void setcoordinate(int tlx, int tly, int blx, int bly);
+    bool bYOutofBound(int yValue);
 };
 
 #endif

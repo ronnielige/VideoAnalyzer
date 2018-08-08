@@ -62,8 +62,14 @@ namespace VideoAnalyzer {
         delegate void setBitRatePicBoxWidthDelegate(Int32 w);
         setBitRatePicBoxWidthDelegate^ msetBitRatePicBoxWidthDelegate;
 
+        delegate void setBitRatePicBoxHeightDelegate(Int32 h);
+        setBitRatePicBoxHeightDelegate^ msetBitRatePicBoxHeightDelegate;
+
         delegate void setBitRatePannelHScrollDelegate(Int32 x);
         setBitRatePannelHScrollDelegate^ msetBitRatePannelHScrollDelegate;
+
+        delegate void setBitRatePannelVScrollDelegate(Int32 x);
+        setBitRatePannelVScrollDelegate^ msetBitRatePannelVScrollDelegate;
 
         delegate void refreshPicBoxDelegate(void);
         refreshPicBoxDelegate^ mRefreshPixBoxDelegate;
@@ -123,11 +129,22 @@ namespace VideoAnalyzer {
             {
                 VideoBitRatePicBox->Width = w;
             }
+    public: System::Void setBitRatePicBoxHeightMethod(Int32 h)
+            {
+                VideoBitRatePicBox->Height = h;
+            }
+
     public: System::Void setBRPannelHScrollMethod(Int32 x)
             {
-                Point p(x, 0);
-                //VideoBitratePannel->HorizontalScroll->Value = x;
+                Point p(x, VideoBitratePannel->VerticalScroll->Value);
                 VideoBitratePannel->AutoScrollPosition = p;
+                //VideoBitratePannel->HorizontalScroll->Value = x;  // this method cause flash
+            }
+    public: System::Void setBRPannelVScrollMethod(Int32 x)
+            {
+                Point p(VideoBitratePannel->HorizontalScroll->Value, x);
+                VideoBitratePannel->AutoScrollPosition = p;
+                //VideoBitratePannel->VerticalScroll->Value = x;
             }
     public: System::Void refreshPicBoxMethod(void)
             {

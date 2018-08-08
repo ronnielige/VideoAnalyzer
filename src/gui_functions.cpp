@@ -30,7 +30,9 @@ Form1::Form1(void)
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
     mSetPlayProgressDelegate = gcnew setPlayProgress(this, &Form1::setPlayProgressMethod);
     msetBitRatePicBoxWidthDelegate = gcnew setBitRatePicBoxWidthDelegate(this, &Form1::setBitRatePicBoxWidthMethod);
+    msetBitRatePicBoxHeightDelegate = gcnew setBitRatePicBoxHeightDelegate(this, &Form1::setBitRatePicBoxHeightMethod);
     msetBitRatePannelHScrollDelegate = gcnew setBitRatePannelHScrollDelegate(this, &Form1::setBRPannelHScrollMethod);
+    msetBitRatePannelVScrollDelegate = gcnew setBitRatePannelVScrollDelegate(this, &Form1::setBRPannelVScrollMethod);
     mRefreshPixBoxDelegate = gcnew refreshPicBoxDelegate(this, &Form1::refreshPicBoxMethod);
     mCallPicBoxPaintDelegate = gcnew callPicBoxPaintDelegate(this, &Form1::callPicBoxPaintMethod);
 
@@ -328,6 +330,16 @@ System::Void Form1::updateBitStat(int frameBits, int pts)
 
         int xOffset = VideoBitratePannel->HorizontalScroll->Value;
         int targetX = m_CBitRateStat->getNewstAIdx() * m_oscBitRate->mGridWidth;
+        if(m_oscBitRate->bYOutofBound(m_CBitRateStat->getNewstValue() / 1000)) // y value out of bound, need to expand
+        {
+            //VideoBitRatePicBox->Height = VideoBitRatePicBox->Height * 2;
+            Invoke(msetBitRatePicBoxHeightDelegate, VideoBitRatePicBox->Height * 2);
+            Invoke(msetBitRatePannelVScrollDelegate, VideoBitRatePicBox->Height);
+            m_oscBitRate->setYMax(m_CBitRateStat->getNewstValue() / 1000 * 2);
+            m_oscBitRate->setcoordinate(0, 0, 0, VideoBitRatePicBox->Height);;
+            Invoke(mRefreshPixBoxDelegate);   // clear draw contents and keep background color
+            Invoke(mCallPicBoxPaintDelegate);
+        }
         if(targetX - xOffset > VideoBitratePannel->Width - 2 * m_oscBitRate->mGridWidth) // almost reached right boundary, need to scroll left 
         {
             Invoke(msetBitRatePannelHScrollDelegate, targetX - VideoBitratePannel->Width / 2); 
@@ -342,7 +354,7 @@ System::Void Form1::updateBitStat(int frameBits, int pts)
 
 System::Void Form1::PlayButton_Click(System::Object^  sender, System::EventArgs^  e) 
 {
-    if(String::IsNullOrEmpty(mfilename)) // input file not choosen yet
+    if(String::IsNullOrEmpty(mfilename)) // input file not choosed yet
         return;
 
     if(m_CPlayer)
