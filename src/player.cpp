@@ -6,6 +6,7 @@ extern "C"
 {
 #define __STDC_CONSTANT_MACROS
 #include "libavutil\avutil.h"
+#include "libavutil\cpu.h"
 #include "libavformat\avformat.h"
 #include "libavcodec\avcodec.h"
 };
@@ -98,6 +99,25 @@ VideoPlayer::VideoPlayer(void)
     pthread_mutex_init(&m_mtxSwsCtx, NULL);
 }
 
+void VideoPlayer::AutoSetDecodeThreadNum(AVStream *st)
+{
+    int width  = st->codecpar->width;
+    int height = st->codecpar->height;
+    int nb_cpu_cnt = av_cpu_count();
+    int max_thread_num = nb_cpu_cnt - 1;
+
+    if(width < 1280 && height < 720)
+        st->codec->thread_count = min(1, max_thread_num);
+    else if(width <1920 && height < 1080)
+        st->codec->thread_count = min(2, max_thread_num);
+    else if(width < 3000 && height < 1600)
+        st->codec->thread_count = min(3, max_thread_num);
+    else if(width < 3840 && height < 2160)
+        st->codec->thread_count = min(4, max_thread_num);
+    else
+        st->codec->thread_count = min(6, max_thread_num);
+}
+
 VideoPlayer::VideoPlayer(char* filename)
 {
     m_pFilename    = (char*)malloc(strlen(filename) + 10);
@@ -185,6 +205,7 @@ void VideoPlayer::PlayerInit()
             vcodecpar = st->codecpar;
             AVRational sar = av_guess_sample_aspect_ratio(m_pAvftx, st, NULL);
             sprintf_s(m_strVideoInfo + strlen(m_strVideoInfo), 1000 - strlen(m_strVideoInfo), "\nResolution:\n   %d x %d\n", vcodecpar->width, vcodecpar->height);
+            AutoSetDecodeThreadNum(st);
             stream_component_open(m_pAvftx, &m_pAvctx, &codec, st_index[AVMEDIA_TYPE_VIDEO]);
 
             m_iFrameInterval = (int)(1000.0 / av_q2d(st->avg_frame_rate));

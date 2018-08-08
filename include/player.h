@@ -68,6 +68,7 @@ public:
     static void* decodeThread(void* v);
     //static void* renderThread(void* v);
 private:
+    void AutoSetDecodeThreadNum(AVStream* st);
     void DumpFormat(int stream_idx, char* output_str);
 };
 
