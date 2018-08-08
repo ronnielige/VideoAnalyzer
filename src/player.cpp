@@ -326,11 +326,13 @@ void* VideoPlayer::readThread(void* v)
     int ret;
     AVFormatContext* fmtctx = pl->m_pAvftx;
     AVPacket pkt1, *pkt = &pkt1;
-    AVPacket flush_pkt1, *flush_pkt = &flush_pkt1;
+    AVPacket *flush_pkt = &pl->m_flush_pkt;
     int64_t stream_start_time;
     int64_t pkt_ts;
 
     av_register_all();
+    av_init_packet(flush_pkt); 
+    flush_pkt->data = (uint8_t *)flush_pkt;
     while(1)
     {
         pthread_mutex_lock(&pl->m_mtxPlayStat);
@@ -358,9 +360,8 @@ void* VideoPlayer::readThread(void* v)
                 if((ret == AVERROR_EOF || avio_feof(fmtctx->pb))) // reach end of file
                 {
                     pl->m_iEof = true;
-                    flush_pkt->data = NULL;
-                    flush_pkt->size = 0;
                     packet_queue_put(&(pl->m_videoq), flush_pkt);
+                    packet_queue_abort(&(pl->m_videoq), true);  // notify packet queue don't wait while queue empty at end of file
                     va_log(LOGLEVEL_KEYINFO, "readThread reached end of file, put null packet\n");
                     break;
                 }
@@ -446,23 +447,24 @@ void* VideoPlayer::decodeThread(void* v)
                     va_log(LOGLEVEL_DEBUG, "Decoded frame pts = %8d ms, %lld \n", (int)(1000 * myframe->pts), DateTime::Now.ToFileTime() / 10000);
                     picture_queue_write(fq);
                 }
-
-                if(pkt->data == NULL) // get flush pkt
-                {
-                    do{
-                        ret = avcodec_decode_video2(pl->m_pAvctx, myframe->yuvframe, &got_frame, pkt);
-                        if(ret < 0)
-                            break;
-                        if(got_frame)
-                        {
-                            // TODO: need to append these frames
-                        }
-                    }while(got_frame);
-                    va_log(LOGLEVEL_KEYINFO, "decodeThread received null packet, end of file and exit thread\n");
-                    break; // exit decode thread
-                }
             }
-            av_packet_unref(pkt); // release pkt buffer
+
+            if(pkt->data == NULL) // get flush pkt
+            {
+                do{
+                    ret = avcodec_decode_video2(pl->m_pAvctx, myframe->yuvframe, &got_frame, pkt);
+                    if(ret < 0)
+                        break;
+                    if(got_frame)
+                    {
+                        // TODO: need to append these frames
+                    }
+                }while(got_frame);
+                va_log(LOGLEVEL_KEYINFO, "decodeThread received null packet, end of file and exit thread\n");
+                break; // exit decode thread
+            }
+            else
+                av_packet_unref(pkt); // release pkt buffer
         }
     }
     return NULL;

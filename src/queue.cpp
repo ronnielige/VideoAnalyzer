@@ -69,7 +69,7 @@ int packet_queue_get(PacketQueue* pq, AVPacket *rpkt)
     while(!pq->abort && (pq->size == 0 || pq->firstNode == NULL)) // packet queue empty, wait
         pthread_cond_wait(pq->cond, pq->mtx);
 
-    if(pq->abort)
+    if(pq->abort && pq->size == 0) // packet queue is empty and abort is received 
     {
         pthread_mutex_unlock(pq->mtx);
         return -1;

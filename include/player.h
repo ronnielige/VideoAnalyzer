@@ -21,6 +21,7 @@ public:
     char*              m_strDuration;
     PacketQueue        m_videoq;  // video packet queue
     FrameQueue         m_pictq;   // video decoded frame queue 
+    AVPacket           m_flush_pkt;
     struct SwsContext* m_pSwsCtx;
     int                m_iFrameInterval; // time interval between two frames
     AVRational         m_TimeBase;
