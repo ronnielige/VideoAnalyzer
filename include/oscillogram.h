@@ -2,6 +2,7 @@
 #define _OSCILLOGRAM_H_
 
 #include "w32thread.h"
+#include "bitstat.h"
 using namespace System;
 using namespace System::ComponentModel;
 using namespace System::Collections;
@@ -32,11 +33,14 @@ public:
     pthread_mutex_t* m_mtx;
 
 public:
-    oscillogram(PictureBox^ picb, int w, int h);
+    BitStat*    m_CBitStat;   // stat bits per second or stat frame bit
+
+    oscillogram(PictureBox^ picb);
     ~oscillogram();
 
-    void addPoint(int xvalue, int yvalue);
-    void showPoints(int yArray[], int xStart, int numPoints);
+    void AddPoint(int yvalue, int pts);
+    void ShowNewPoint(void);
+    void showPoints(int xStart, int numPoints);
     void setYMax(int ym)
     {
         mYMax = ym;

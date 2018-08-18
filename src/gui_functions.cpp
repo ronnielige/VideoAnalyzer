@@ -23,8 +23,7 @@ Form1::Form1(void)
 
     m_videoPlayGraphic = VideoPlaybackPannel->CreateGraphics();
     m_CPlayer = NULL;
-    m_CBitRateStat   = new BitStat(1000);
-    m_CFrameBitsStat = new BitStat(25000);
+
 
     // set delegates
     mSetVidInfDelegate = gcnew setVideoInfo(this, &Form1::setVideoInfoMethod);
@@ -39,16 +38,11 @@ Form1::Form1(void)
     this->SetStyle(static_cast<ControlStyles>(ControlStyles::DoubleBuffer | ControlStyles::UserPaint | ControlStyles::AllPaintingInWmPaint), true);
     this->UpdateStyles();
 
-    m_oscBitRate = gcnew oscillogram(VideoBitRatePicBox, VideoBitRatePicBox->Width, VideoBitRatePicBox->Height);
+    m_oscBitRate = gcnew oscillogram(VideoBitRatePicBox);
 }
 
 Form1::~Form1()
 {
-    if(m_CBitRateStat)
-        delete m_CBitRateStat;
-    if(m_CFrameBitsStat)
-        delete m_CFrameBitsStat;
-
     if(m_CPlayer)
     {
         m_CPlayer->PlayerExit();
@@ -126,14 +120,14 @@ System::Void Form1::VideoBitratePicBox_Paint(System::Object^  sender, System::Wi
         int   targetPicBoxWidth;
 
         targetPicBoxWidth = max(VideoBitRatePicBox->Width, VideoBitratePannel->HorizontalScroll->Value + VideoBitratePannel->Width * 2);
-        targetPicBoxWidth = min(targetPicBoxWidth,         m_CBitRateStat->getNewstAIdx() * m_oscBitRate->mGridWidth + VideoBitratePannel->Width * 2);
+        targetPicBoxWidth = min(targetPicBoxWidth,         m_oscBitRate->m_CBitStat->getNewstAIdx() * m_oscBitRate->mGridWidth + VideoBitratePannel->Width * 2);
 
         Invoke(msetBitRatePicBoxWidthDelegate, targetPicBoxWidth); 
         //VideoBitRatePicBox->Width = targetPicBoxWidth;  // fix flash, but it's not allowed in debug mode
 
-        int   numPoints = (m_CBitRateStat->getNewstAIdx() - xIdx) < 0? 0: min(m_CBitRateStat->getNewstAIdx() - xIdx, VideoBitratePannel->Width / m_oscBitRate->mGridWidth + 2);
+        int   numPoints = (m_oscBitRate->m_CBitStat->getNewstAIdx() - xIdx) < 0? 0: min(m_oscBitRate->m_CBitStat->getNewstAIdx() - xIdx + 1, VideoBitratePannel->Width / m_oscBitRate->mGridWidth + 2);
         drawGrid(g, xStart, VideoBitratePannel->Width + 2 * m_oscBitRate->mGridWidth, VideoBitRatePicBox->Height, 20, 0, 0);
-        m_oscBitRate->showPoints(m_CBitRateStat->getArray(), max(0, xIdx - 1), numPoints + 1);
+        m_oscBitRate->showPoints(max(0, xIdx - 1), numPoints + 1);
         delete g;
     }
 }
@@ -288,15 +282,13 @@ System::Void Form1::openToolStripMenuItem_Click(System::Object^  sender, System:
 
     int duration_sec = m_CPlayer->GetDuration() + 1;
     VideoBitRatePicBox->Width = VideoBitratePannel->Width;
-    m_CBitRateStat->updateLastPts((int)1000 * (m_CPlayer->m_pAvftx->start_time) / AV_TIME_BASE);
+    m_oscBitRate->m_CBitStat->setFirstPts((int)(1000 * m_CPlayer->m_pAvftx->start_time / AV_TIME_BASE));
     if(m_CPlayer->GetFileBitRate())
     {
         m_oscBitRate->setYMax((int)(m_CPlayer->GetFileBitRate() / 1000) * 2);
         m_oscBitRate->setYScale((float)m_oscBitRate->mactHeight / m_oscBitRate->mYMax);
     }
     m_oscBitRate->reset();
-    m_CBitRateStat->reset();
-    m_CFrameBitsStat->reset();
 
     m_videoPlayGraphic->Clear(BackColor);
     Graphics^ g = VideoBitRatePicBox->CreateGraphics();
@@ -319,9 +311,13 @@ System::Void Form1::asyncUpdatePlayProgress(Frame* renderFrame)
 
 System::Void Form1::updateBitStat(int frameBits, int pts)
 {
-    m_CFrameBitsStat->appendItem(frameBits, pts);
-    m_CBitRateStat->accumItem(frameBits, pts);
-    if(m_CBitRateStat->getAccumInterval() >= 1000) // 1s
+    //m_CFrameBitsStat->appendItem(frameBits, pts);
+    //m_CBitRateStat->accumItem(frameBits, pts);
+    static int BitsOneSecond = 0;
+    BitsOneSecond += frameBits;
+    //va_log(LOGLEVEL_DEBUG, "updateBitStat: current pts = %d ms, newst pts in stat array = %d ms\n", pts, m_oscBitRate->m_CBitStat->getNewstPts());
+    if(pts - m_oscBitRate->m_CBitStat->getNewstPts() >= 1000)
+    //if(m_CBitRateStat->getAccumInterval() >= 1000) // 1s
     {
         Graphics^ g = VideoBitRatePicBox->CreateGraphics();
         Int32 xStart = VideoBitratePannel->HorizontalScroll->Value / m_oscBitRate->mGridWidth * m_oscBitRate->mGridWidth;
@@ -329,13 +325,13 @@ System::Void Form1::updateBitStat(int frameBits, int pts)
         drawGrid(g, xStart, VideoBitratePannel->Width + 2* m_oscBitRate->mGridWidth, VideoBitRatePicBox->Height, 20, 0, 0);
 
         int xOffset = VideoBitratePannel->HorizontalScroll->Value;
-        int targetX = m_CBitRateStat->getNewstAIdx() * m_oscBitRate->mGridWidth;
-        if(m_oscBitRate->bYOutofBound(m_CBitRateStat->getNewstValue() / 1000)) // y value out of bound, need to expand
+        int targetX = m_oscBitRate->m_CBitStat->getNewstAIdx() * m_oscBitRate->mGridWidth;
+        if(m_oscBitRate->bYOutofBound(m_oscBitRate->m_CBitStat->getNewstValue() / 1000)) // y value out of bound, need to expand
         {
             //VideoBitRatePicBox->Height = VideoBitRatePicBox->Height * 2;
             Invoke(msetBitRatePicBoxHeightDelegate, VideoBitRatePicBox->Height * 2);
             Invoke(msetBitRatePannelVScrollDelegate, VideoBitRatePicBox->Height);
-            m_oscBitRate->setYMax(m_CBitRateStat->getNewstValue() / 1000 * 2);
+            m_oscBitRate->setYMax(m_oscBitRate->m_CBitStat->getNewstValue() / 1000 * 2);
             m_oscBitRate->setcoordinate(0, 0, 0, VideoBitRatePicBox->Height);;
             Invoke(mRefreshPixBoxDelegate);   // clear draw contents and keep background color
             Invoke(mCallPicBoxPaintDelegate);
@@ -346,9 +342,9 @@ System::Void Form1::updateBitStat(int frameBits, int pts)
             Invoke(mRefreshPixBoxDelegate);   // clear draw contents and keep background color
             Invoke(mCallPicBoxPaintDelegate);
         }
-        m_oscBitRate->addPoint(m_CBitRateStat->getNewstAIdx(), m_CBitRateStat->getNewstValue() / 1000); // bitrate(kbps)
-        m_CBitRateStat->updateLastPts(pts);
-        m_CBitRateStat->incArrIdx();
+        m_oscBitRate->AddPoint(BitsOneSecond / 1000, pts); // bitrate(kbps)
+        m_oscBitRate->ShowNewPoint();
+        BitsOneSecond = 0; 
     }
 }
 

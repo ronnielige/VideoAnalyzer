@@ -1,24 +1,22 @@
 #include "StdAfx.h"
 #include "oscillogram.h"
 
-oscillogram::oscillogram(PictureBox^ picb, int w, int h)
+oscillogram::oscillogram(PictureBox^ picb)
 {
     mPicBox     = picb;
     m_mtx       = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
     mPen        = gcnew Pen(Color::Red, 2.0);
     pthread_mutex_init(m_mtx, NULL);
-    mGraWidth  = w;
-    mGraHeight = h;
     mGridWidth = 20;
 
     mTlP.X = 0;  
     mTlP.Y = 0;
 
     mBlP.X = 0;
-    mBlP.Y = mGraHeight / mGridWidth * mGridWidth; 
+    mBlP.Y = picb->Height / mGridWidth * mGridWidth; 
     mactHeight = mBlP.Y - mTlP.Y;
 
-    mBrP.X = mGraWidth / mGridWidth * mGridWidth;
+    mBrP.X = picb->Width / mGridWidth * mGridWidth;
     mBrP.Y = mBlP.Y;
 
     mLastP.X = 0;
@@ -26,6 +24,8 @@ oscillogram::oscillogram(PictureBox^ picb, int w, int h)
 
     mYMax = 10000;
     mYScale = (float)mactHeight / mYMax;
+
+    m_CBitStat   = new BitStat(10000);
     //mPen->DashStyle = DashStyle::DashStyleSolid;
 }
 
@@ -42,16 +42,26 @@ void oscillogram::setcoordinate(int tlx, int tly, int blx, int bly)
 oscillogram::~oscillogram()
 {
     pthread_mutex_destroy(m_mtx);
+    if(m_CBitStat)
+        delete m_CBitStat;
 }
 
 void oscillogram::reset()
 {
     mLastP.X = 0;
     mLastP.Y = 0;
+    m_CBitStat->reset();
 }
 
-void oscillogram::addPoint(int xValue, int yValue)
+void oscillogram::AddPoint(int yvalue, int pts)
 {
+    m_CBitStat->appendItem(yvalue, pts);
+}
+
+void oscillogram::ShowNewPoint()
+{
+    int xValue = m_CBitStat->getNewstAIdx();
+    int yValue = m_CBitStat->getNewstValue();
     int xPos = xValue * mGridWidth;
     int yPos = mBlP.Y - (int)(yValue * mYScale);
 
@@ -76,7 +86,7 @@ bool oscillogram::bYOutofBound(int yValue)
         return false;
 }
 
-void oscillogram::showPoints(int* yArray, int xStart, int numPoints)
+void oscillogram::showPoints(int xStart, int numPoints)
 {
     int cnt = 0;
     int xPos, yPos;
@@ -90,7 +100,7 @@ void oscillogram::showPoints(int* yArray, int xStart, int numPoints)
     while(cnt < numPoints)
     {
         xPos = xPosOffset + cnt * mGridWidth;
-        yPos = mBlP.Y - (int)(yArray[xStart + cnt] * mYScale / 1000);
+        yPos = mBlP.Y - (int)(m_CBitStat->getPointByIdx(xStart + cnt)->y * mYScale);
 
         if(mLastP.Y > 0)
             mGraphic->DrawLine(mPen, mLastP.X, mLastP.Y, xPos, yPos);

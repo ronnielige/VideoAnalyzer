@@ -38,8 +38,6 @@ namespace VideoAnalyzer {
         int          m_iLogLevel;
 
         VideoPlayer* m_CPlayer;
-        BitStat*     m_CBitRateStat;   // stat bitrate per second
-        BitStat*     m_CFrameBitsStat; // stat frame bit
         Thread^      rendThread;
 
         String^ mVideoInfo;
