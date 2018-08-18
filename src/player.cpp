@@ -420,11 +420,16 @@ void* VideoPlayer::decodeThread(void* v)
                     pkt->size -= pkt->size;
                 }while(pkt->size > 0);
                 
+                myframe->yuvframe->pkt_size;
                 if(got_frame)
                 {
                     myframe->yuvframe->pts = av_frame_get_best_effort_timestamp(myframe->yuvframe);
                     myframe->pts = (myframe->yuvframe->pts == AV_NOPTS_VALUE) ? NAN : myframe->yuvframe->pts * av_q2d(pl->m_TimeBase);
                     myframe->frame_pkt_bits = frame_pkt_size * 8;
+                    //va_log(LOGLEVEL_DEBUG, "Decoded frame got frame: nowPktSize = %d, frame_pkt_size = %d \n", frame_pkt_size, myframe->yuvframe->pkt_size);
+                    if(myframe->yuvframe->pkt_size > 0)
+                        myframe->frame_pkt_bits = myframe->yuvframe->pkt_size * 8;
+                    
                     frame_pkt_size = 0;
                     if(1)
                     {

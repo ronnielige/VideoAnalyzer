@@ -326,12 +326,12 @@ System::Void Form1::updateBitStat(int frameBits, int pts)
 
         int xOffset = VideoBitratePannel->HorizontalScroll->Value;
         int targetX = m_oscBitRate->m_CBitStat->getNewstAIdx() * m_oscBitRate->mGridWidth;
-        if(m_oscBitRate->bYOutofBound(m_oscBitRate->m_CBitStat->getNewstValue() / 1000)) // y value out of bound, need to expand
+        if(m_oscBitRate->bYOutofBound(BitsOneSecond / 1000)) // y value out of bound, need to expand
         {
             //VideoBitRatePicBox->Height = VideoBitRatePicBox->Height * 2;
             Invoke(msetBitRatePicBoxHeightDelegate, VideoBitRatePicBox->Height * 2);
             Invoke(msetBitRatePannelVScrollDelegate, VideoBitRatePicBox->Height);
-            m_oscBitRate->setYMax(m_oscBitRate->m_CBitStat->getNewstValue() / 1000 * 2);
+            m_oscBitRate->setYMax(BitsOneSecond / 1000 * 2);
             m_oscBitRate->setcoordinate(0, 0, 0, VideoBitRatePicBox->Height);;
             Invoke(mRefreshPixBoxDelegate);   // clear draw contents and keep background color
             Invoke(mCallPicBoxPaintDelegate);
