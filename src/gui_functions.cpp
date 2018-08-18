@@ -39,6 +39,7 @@ Form1::Form1(void)
     this->UpdateStyles();
 
     m_oscBitRate = gcnew oscillogram(VideoBitRatePicBox);
+    m_oscBitRate->SetFont(this->Font);
 }
 
 Form1::~Form1()
@@ -128,6 +129,7 @@ System::Void Form1::VideoBitratePicBox_Paint(System::Object^  sender, System::Wi
         int   numPoints = (m_oscBitRate->m_CBitStat->getNewstAIdx() - xIdx) < 0? 0: min(m_oscBitRate->m_CBitStat->getNewstAIdx() - xIdx + 1, VideoBitratePannel->Width / m_oscBitRate->mGridWidth + 2);
         drawGrid(g, xStart, VideoBitratePannel->Width + 2 * m_oscBitRate->mGridWidth, VideoBitRatePicBox->Height, 20, 0, 0);
         m_oscBitRate->showPoints(max(0, xIdx - 1), numPoints + 1);
+        //m_oscBitRate->drawYLengend(1 + max(0, xIdx - 1));
         delete g;
     }
 }

@@ -1,5 +1,8 @@
 #include "StdAfx.h"
 #include "oscillogram.h"
+#include <stdio.h>
+
+#define str2String(str) System::Runtime::InteropServices::Marshal::PtrToStringAnsi((IntPtr)(char*)(str))
 
 oscillogram::oscillogram(PictureBox^ picb)
 {
@@ -58,18 +61,36 @@ void oscillogram::AddPoint(int yvalue, int pts)
     m_CBitStat->appendItem(yvalue, pts);
 }
 
+void convertPtsToTime(char* time, int pts) // pts = ms
+{
+    int secs = (int)pts / 1000;
+    int mins = secs / 60;
+    int hour = mins / 60;
+    secs %= 60;
+    mins %= 60;
+    sprintf_s(time, 20, "%02d:%02d:%02d", hour, mins, secs);
+}
+
 void oscillogram::ShowNewPoint()
 {
     int xValue = m_CBitStat->getNewstAIdx();
     int yValue = m_CBitStat->getNewstValue();
+    bool showlegend = m_CBitStat->getPointByIdx(xValue)->b_showlegend;
+    int  pts = m_CBitStat->getPointByIdx(xValue)->pts; // ms
     int xPos = xValue * mGridWidth;
     int yPos = mBlP.Y - (int)(yValue * mYScale);
+    char time[20];
 
     pthread_mutex_lock(m_mtx);
     if(mLastP.Y > 0)
     {
         mGraphic = mPicBox->CreateGraphics();
         mGraphic->DrawLine(mPen, mLastP.X, mLastP.Y, xPos, yPos);
+        if(showlegend)
+        {
+            convertPtsToTime(time, pts - m_CBitStat->getFirstPts());
+            mGraphic->DrawString(str2String(time), mFont, Brushes::Black, xPos, mBlP.Y);
+        }
         delete mGraphic;
     }
     mLastP.X = xPos;
@@ -86,11 +107,28 @@ bool oscillogram::bYOutofBound(int yValue)
         return false;
 }
 
+void oscillogram::drawYLengend(int xStart)
+{
+    int xPos = xStart * mGridWidth;
+    char str[20];
+    int yLengendValue;
+    mGraphic = mPicBox->CreateGraphics();
+    for(int y = mBlP.Y; y >= 0; y = y - 2 * mGridWidth)
+    {
+        yLengendValue = (int)((float)(mBlP.Y - y) / mYScale);
+        sprintf_s(str, 20, "%d", yLengendValue);
+        mGraphic->DrawString(str2String(str), mFont, Brushes::Black, xPos, y);
+    }
+    delete mGraphic;
+}
+
 void oscillogram::showPoints(int xStart, int numPoints)
 {
     int cnt = 0;
     int xPos, yPos;
     int xPosOffset = xStart * mGridWidth;
+    BitPoint* bp;
+    char time[20];
 
     pthread_mutex_lock(m_mtx);
     mLastP.Y = 0;
@@ -99,11 +137,19 @@ void oscillogram::showPoints(int xStart, int numPoints)
 
     while(cnt < numPoints)
     {
+        bp = m_CBitStat->getPointByIdx(xStart + cnt);
         xPos = xPosOffset + cnt * mGridWidth;
-        yPos = mBlP.Y - (int)(m_CBitStat->getPointByIdx(xStart + cnt)->y * mYScale);
+        yPos = mBlP.Y - (int)(bp->y * mYScale);
 
         if(mLastP.Y > 0)
+        {
             mGraphic->DrawLine(mPen, mLastP.X, mLastP.Y, xPos, yPos);
+            if(bp->b_showlegend)
+            {
+                convertPtsToTime(time, bp->pts - m_CBitStat->getFirstPts());
+                mGraphic->DrawString(str2String(time), mFont, Brushes::Black, xPos, mBlP.Y);
+            }
+        }
 
         mLastP.X = xPos;
         mLastP.Y = yPos;

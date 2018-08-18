@@ -5,13 +5,16 @@ typedef struct {
     int x;   // time index
     int y;   // bit of a frame or bits of a second
     int pts; // pts
+    bool b_showlegend;
 }BitPoint;
 
 class BitStat{
 private:
     BitPoint* m_piBitArray;   // int array, each item represents bits of a frame or bitrate of a second
     int  m_iBitAIdx;
+    int  m_iLastLegendIdx;
     int  m_iBitASize;
+    int  m_iFirstPts;
     int  m_iCurPts;
     int  m_iLastPts;
     int  reallocBitArrayIfNeeded(void);
@@ -29,6 +32,7 @@ public:
     void incArrIdx(void);
     void updateLastPts(int pts);
     void setFirstPts(int pts);
+    int  getFirstPts(void);
     int  getAccumInterval();              // get accumulation interval 
 
     int  getNewstValue(void);

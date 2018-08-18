@@ -6,7 +6,9 @@
 BitStat::BitStat(void)
 {
     m_iBitAIdx   = 0;     // Array Index
+    m_iLastLegendIdx = 0;
     m_iCurPts    = 0;
+    m_iFirstPts  = 0;
     m_iBitASize  = 1000;  // bit rate array size
     m_piBitArray = (BitPoint *)malloc(sizeof(BitPoint) * m_iBitASize);
     if(m_piBitArray != NULL)
@@ -16,7 +18,9 @@ BitStat::BitStat(void)
 BitStat::BitStat(int iBitASize)
 {
     m_iBitAIdx   = 0;     // Array Index
+    m_iLastLegendIdx = 0;
     m_iCurPts    = 0;
+    m_iFirstPts  = 0;
     m_iBitASize  = iBitASize;  // bit rate array size
     m_piBitArray = (BitPoint *)malloc(sizeof(BitPoint) * m_iBitASize);
     if(m_piBitArray != NULL)
@@ -52,6 +56,8 @@ int BitStat::reallocBitArrayIfNeeded(void)
 void BitStat::reset(void)
 {
     m_iBitAIdx = 0;
+    m_iLastLegendIdx = 0;
+    m_iFirstPts = 0;
     m_iLastPts = 0;
     if(m_piBitArray != NULL)
         memset(m_piBitArray, 0, sizeof(BitPoint) * m_iBitASize);
@@ -63,6 +69,12 @@ void BitStat::appendItem(int value)
     {
         m_piBitArray[m_iBitAIdx].x = m_iBitAIdx;
         m_piBitArray[m_iBitAIdx].y = value;
+        m_piBitArray[m_iBitAIdx].b_showlegend = false;
+        if(m_iBitAIdx - m_iLastLegendIdx >= 5)
+        {
+            m_piBitArray[m_iBitAIdx].b_showlegend = true;
+            m_iLastLegendIdx = m_iBitAIdx;
+        }
         m_iBitAIdx++;
     }
 }
@@ -74,6 +86,13 @@ void BitStat::appendItem(int value, int pts)
         m_piBitArray[m_iBitAIdx].x   = m_iBitAIdx;
         m_piBitArray[m_iBitAIdx].y   = value;
         m_piBitArray[m_iBitAIdx].pts = pts;
+
+        m_piBitArray[m_iBitAIdx].b_showlegend = false;
+        if(m_iBitAIdx - m_iLastLegendIdx >= 5)
+        {
+            m_piBitArray[m_iBitAIdx].b_showlegend = true;
+            m_iLastLegendIdx = m_iBitAIdx;
+        }
         m_iBitAIdx++;
     }
 }
@@ -99,6 +118,12 @@ int BitStat::getNewstPts(void)
 void BitStat::setFirstPts(int pts)
 {
     m_piBitArray[0].pts = pts;
+    m_iFirstPts  = pts;
+}
+
+int  BitStat::getFirstPts(void)
+{
+    return m_iFirstPts;
 }
 
 BitPoint* BitStat::getPointByIdx(int idx)

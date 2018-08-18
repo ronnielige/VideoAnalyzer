@@ -18,6 +18,7 @@ public:
     PictureBox^ mPicBox;
     Graphics^   mGraphic;
     Pen^        mPen;
+    Font^       mFont;
     int       mGraWidth;
     int       mGraHeight;
     Point     mBlP;    // bottom left point of image
@@ -40,7 +41,12 @@ public:
 
     void AddPoint(int yvalue, int pts);
     void ShowNewPoint(void);
+    void drawYLengend(int xStart);
     void showPoints(int xStart, int numPoints);
+    void SetFont(Font^ fnt)
+    {
+        mFont = fnt;
+    }
     void setYMax(int ym)
     {
         mYMax = ym;
